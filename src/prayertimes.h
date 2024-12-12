@@ -5,7 +5,7 @@
 #include <time.h>
 
 typedef struct {
-    int hour, minute, second;
+    int hour, minute, second, millisecond;
 } timelabel;
 
 /* calculate julian day number */
@@ -35,8 +35,14 @@ double angle_A(double n, double lng, double lat, double dec);
  */
 void calc_schedule(double lat, double lng, double elev, double Z, time_t time,
                    double *times, double asr_angle);
-/* print a time in AM/PM format */
-void print_time(const char *l, timelabel t);
+
+typedef struct print_conf {
+    bool am_pm; /* AM/PM time? */
+    bool seconds; /* include seconds */
+} print_conf_t;
+
+/* print a time */
+void print_time(const char *l, timelabel t, print_conf_t conf);
 
 /* suntime -> timelabel */
 timelabel sun2norm(double suntime);

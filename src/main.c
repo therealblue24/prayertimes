@@ -10,6 +10,23 @@
 #include <ctype.h>
 #include "prayertimes.h"
 
+static const char *prefixes[] = {
+    [1] = "st",  [2] = "nd",  [3] = "rd",  [4] = "th",  [5] = "th",
+    [6] = "th",  [7] = "th",  [8] = "th",  [9] = "th",  [10] = "th",
+    [11] = "th", [12] = "th", [13] = "th", [14] = "th", [15] = "th",
+    [16] = "th", [17] = "th", [18] = "th", [19] = "th", [20] = "th",
+    [21] = "st", [22] = "nd", [23] = "rd", [24] = "th", [25] = "th",
+    [26] = "th", [27] = "th", [28] = "th", [29] = "th", [30] = "th",
+    [31] = "st", NULL
+};
+
+static const char *months[] = { "January",   "Feburary", "March",    "April",
+                                "May",       "June",     "July",     "August",
+                                "September", "October",  "November", "December",
+                                NULL };
+static const char *weekdays[] = { "Sunday",   "Monday", "Tuesday",  "Wednesday",
+                                  "Thursday", "Friday", "Saturday", NULL };
+
 void init_conf(char *path)
 {
     double lat = 0, lng = 0, elev = 0, ang = 0;
@@ -117,6 +134,23 @@ int main(int argc, char *argv[])
         }
     }
 
+    print_conf_t pconf = { .am_pm = true, .seconds = false };
+
+    int argc2 = 1;
+    while(argc2 < argc) {
+        const char *arg = argv[argc2];
+        if(strcmp(arg, "-12h") == 0) {
+            pconf.am_pm = true;
+        }
+        if(strcmp(arg, "-24h") == 0) {
+            pconf.am_pm = false;
+        }
+        if(strcmp(arg, "--seconds") == 0) {
+            pconf.seconds = true;
+        }
+        argc2++;
+    }
+
     double lat, lng, elev, ang = 0;
     time_t now = time(NULL);
 
@@ -135,6 +169,10 @@ int main(int argc, char *argv[])
     struct tm tm = *localtime(&now);
     double Z = (double)tm.tm_gmtoff / (60 * 60);
     printf("Time zone: %g hours (%s)\n", Z, tm.tm_zone);
+
+    printf("Prayer times for %s, %s %d%s, %d:\n", weekdays[tm.tm_wday],
+           months[tm.tm_mon], tm.tm_mday, prefixes[tm.tm_mday],
+           tm.tm_year + 1900);
     double t[7] = { 0 };
     calc_schedule(lat, lng, elev, Z, now, t, ang);
     //double bedtime_ = ((t[5] + t[6]) / 2.) + 1;
@@ -149,13 +187,13 @@ int main(int argc, char *argv[])
 
     //printf("WARNING: DO NOT 100%% TRUST THESE TIMES.\n");
     //printf("WARNING: Asr may not be accurate.\n");
-    print_time("Fajr:    ", fajr);
-    print_time("Sunrise: ", sunrise);
-    print_time("Dhuhr:   ", dhuhr);
-    print_time("Asr:     ", asr);
+    print_time("Fajr:    ", fajr, pconf);
+    print_time("Sunrise: ", sunrise, pconf);
+    print_time("Dhuhr:   ", dhuhr, pconf);
+    print_time("Asr:     ", asr, pconf);
     //print_time("Sunset:  ", sunset); useless in most cases
-    print_time("Maghrib: ", maghrib);
-    print_time("Isha:    ", isha);
+    print_time("Maghrib: ", maghrib, pconf);
+    print_time("Isha:    ", isha, pconf);
     //putchar('\n');
     //print_time("Bedtime: ", bedtime);
 }

@@ -147,6 +147,9 @@ timelabel sun2norm(num suntime)
     work -= floor(work);
     work *= 60;
     ret.second = floor(work);
+    work -= floor(work);
+    work *= 1000;
+    ret.millisecond = floor(work);
     return ret;
 }
 
@@ -179,7 +182,7 @@ num angle_A(num n, num lat, [[maybe_unused]] num lng, num dec)
     return (1. / 15.) * r2d(acos(upper / lower));
 }
 
-void print_time(const char *l, timelabel t)
+static void print_time_12h_no_sec(const char *l, timelabel t)
 {
     int pm = t.hour >= 12;
     if(pm && t.hour != 12) {
@@ -190,6 +193,51 @@ void print_time(const char *l, timelabel t)
     const char *am_or_pm[] = { "AM", "PM" };
     printf("%s %2d:%02d %s\n", l, t.hour, t.minute, am_or_pm[pm]);
     return;
+}
+
+static void print_time_12h_sec(const char *l, timelabel t)
+{
+    int pm = t.hour >= 12;
+    if(pm && t.hour != 12) {
+        t.hour -= 12;
+    }
+    if(t.hour == 0)
+        t.hour = 12;
+    const char *am_or_pm[] = { "AM", "PM" };
+    printf("%s %2d:%02d:%02d %s\n", l, t.hour, t.minute, t.second,
+           am_or_pm[pm]);
+    return;
+}
+static void print_time_24h_no_sec(const char *l, timelabel t)
+{
+    printf("%s %2d:%02d\n", l, t.hour, t.minute);
+    return;
+}
+
+static void print_time_24h_sec(const char *l, timelabel t)
+{
+    printf("%s %2d:%02d:%02d\n", l, t.hour, t.minute, t.second);
+    return;
+}
+
+void print_time(const char *l, timelabel t, print_conf_t pconf)
+{
+    if(pconf.am_pm && !pconf.seconds) {
+        print_time_12h_no_sec(l, t);
+        return;
+    }
+    if(pconf.am_pm && pconf.seconds) {
+        print_time_12h_sec(l, t);
+        return;
+    }
+    if(!pconf.am_pm && !pconf.seconds) {
+        print_time_24h_no_sec(l, t);
+        return;
+    }
+    if(!pconf.am_pm && pconf.seconds) {
+        print_time_24h_sec(l, t);
+        return;
+    }
 }
 
 /* lat = latitude, lng = longitude, elev = elevation, Z = time zone,
