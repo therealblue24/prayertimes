@@ -1,0 +1,5 @@
+bkp
+*.o
+bin
+.clang-format
+*.bkp
