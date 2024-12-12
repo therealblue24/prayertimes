@@ -31,7 +31,7 @@ double angle_A(double n, double lng, double lat, double dec);
  * Z: timezone
  * time: unix timestamp
  * times: array to store prayer times in
- * asr_angle: i wonder
+ * asr_angle: angle for asr
  */
 void calc_schedule(double lat, double lng, double elev, double Z, time_t time,
                    double *times, double asr_angle);
