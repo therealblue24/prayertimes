@@ -1,6 +1,8 @@
 #include "prayertimes.h"
 #include <stdio.h>
 
+/* Math macros */
+
 #define num double
 
 #define r2d(x)       (x * (180 / M_PI))
@@ -71,6 +73,7 @@ num jdn_now(time_t now)
     return jdn_now;
 }
 
+/* julian day from struct tm */
 num jd_tm(struct tm *t)
 {
     num jdn_now = calc_jdn(t->tm_year + 1900, t->tm_mon + 1, t->tm_mday);
@@ -78,6 +81,7 @@ num jd_tm(struct tm *t)
     return jd;
 }
 
+/* unused i think */
 num jdn_tm(struct tm *t)
 {
     num jdn_now = calc_jdn(t->tm_year + 1900, t->tm_mon + 1, t->tm_mday);
