@@ -4,7 +4,9 @@ Prayer time calculation software
 ## Startup
 
 Build the project using `make`.
+
 Run `./bin/prayertimes` and it should guide you through the configuration process.
+
 Run `./bin/prayertimes --reconf` to force the configuration process.
 
 In the configuration process, it will ask you for your:
