@@ -32,6 +32,9 @@ Please do note that even though efforts have been put to make the calculation as
 ## Command Line Options
 
 `-12h`      - print in 12 hour format
+
 `-24h`      - print in 24 hour format
+
 `--seconds` - print seconds of the time
+
 `--reconf`  - reconfigure the config
