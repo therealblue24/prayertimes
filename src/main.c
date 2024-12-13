@@ -167,8 +167,16 @@ int main(int argc, char *argv[])
     free(dpath);
 
     struct tm tm = *localtime(&now);
+#ifdef __APPLE__
     double Z = (double)tm.tm_gmtoff / (60 * 60);
     printf("Time zone: %g hours (%s)\n", Z, tm.tm_zone);
+#else
+    /* Linux doesn't have tm.tm_gmtoff and tm.tm_zone. Why??????? */
+    struct tm utc_tm = *gmtime(&now);
+    long off = mktime(&tm) - mktime(&utc_tm);
+    double Z = (double)off / (60 * 60);
+    printf("Time zone: %g hours (zone N/A)\n", Z);
+#endif /* __APPLE */
 
     printf("Prayer times for %s, %s %d%s, %d:\n", weekdays[tm.tm_wday],
            months[tm.tm_mon], tm.tm_mday, prefixes[tm.tm_mday],
