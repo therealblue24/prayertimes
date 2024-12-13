@@ -28,3 +28,10 @@ On normal circumstances, it should just print the following prayers/times and th
 - Isha
 
 Please do note that even though efforts have been put to make the calculation as accurate as possible, there may be inaccuracies and you should NOT fully trust the times given to you by this program.
+
+## Command Line Options
+
+`-12h`      - print in 12 hour format
+`-24h`      - print in 24 hour format
+`--seconds` - print seconds of the time
+`--reconf`  - reconfigure the config
