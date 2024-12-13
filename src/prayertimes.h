@@ -2,6 +2,7 @@
 #define PRAYER_TIMES_H_
 
 #include <math.h>
+#include <stdbool.h>
 #include <time.h>
 
 typedef struct {

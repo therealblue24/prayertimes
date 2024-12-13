@@ -1,6 +1,12 @@
 #include "prayertimes.h"
 #include <stdio.h>
 
+/* Welcome to C */
+
+#ifndef M_PI
+#define M_PI (3.141592653589793238462)
+#endif /* M_PI */
+
 /* Math macros */
 
 #define num double

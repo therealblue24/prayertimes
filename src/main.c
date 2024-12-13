@@ -10,6 +10,12 @@
 #include <ctype.h>
 #include "prayertimes.h"
 
+#ifndef __APPLE__
+/* too lazy to impl */
+#define strlcpy strncpy
+#define strlcat strncat
+#endif /* __APPLE__ */
+
 static const char *prefixes[] = {
     [1] = "st",  [2] = "nd",  [3] = "rd",  [4] = "th",  [5] = "th",
     [6] = "th",  [7] = "th",  [8] = "th",  [9] = "th",  [10] = "th",
@@ -176,7 +182,7 @@ int main(int argc, char *argv[])
     long off = mktime(&tm) - mktime(&utc_tm);
     double Z = (double)off / (60 * 60);
     printf("Time zone: %g hours (zone N/A)\n", Z);
-#endif /* __APPLE */
+#endif /* __APPLE__ */
 
     printf("Prayer times for %s, %s %d%s, %d:\n", weekdays[tm.tm_wday],
            months[tm.tm_mon], tm.tm_mday, prefixes[tm.tm_mday],

@@ -1,6 +1,6 @@
 CC = clang
 CFLAGS = -std=c23 -O0 -g -Wall -Wextra
-LDFLAGS = 
+LDFLAGS = -lm
 SRC = $(wildcard src/**/*.c) $(wildcard src/*.c) $(wildcard src/**/**/*.c) $(wildcard src/**/**/**/*.c)
 OBJ = $(SRC:.c=.o)
 BINDIR = bin
