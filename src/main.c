@@ -10,6 +10,10 @@
 #include <ctype.h>
 #include "prayertimes.h"
 
+#define _str(x)       x
+#define xstr(x)       _str(#x)
+#define xstrcat(a, b) xstr(a) xstr(b)
+
 #ifndef __APPLE__
 /* too lazy to impl */
 #define strlcpy strncpy
@@ -95,6 +99,12 @@ void show_help(void)
     printf("\t-ss, --sunset\t\t\tprint sunset time\n");
     printf("\t-u, --utc\t\t\tprint times in UTC\n");
     printf("\t-h, --help\t\t\tthis page\n");
+    printf("\t--no-fajr\t\t\tdon't print fajr\n");
+    printf("\t--no-sunrise\t\t\tdon't print sunrise\n");
+    printf("\t--no-dhuhr\t\t\tdon't print dhuhr\n");
+    printf("\t--no-asr\t\t\tdon't print asr\n");
+    printf("\t--no-maghrib\t\t\tdon't print maghrib\n");
+    printf("\t--no-isha\t\t\tdon't print isha\n");
     printf("\t--usage\t\t\t\tthis page\n");
     printf("\t-12h\t\t\t\tprint times in 12 hour format\n");
     printf("\t-24h\t\t\t\tprint times in 24 hour format\n");
@@ -111,12 +121,14 @@ int main(int argc, char *argv[])
         bool print_sunset; /* print sunset */
         bool utc; /* use UTC */
         bool help; /* help */
+        bool no_show[7]; /* dont show certain time */
     } conf = { .silent_mode = false,
                .show_future_only = false,
                .reconf = false,
                .print_sunset = false,
                .utc = false,
-               .help = false };
+               .help = false,
+               .no_show = { 0 } };
 
     int argc2 = 1;
     while(argc2 < argc) {
@@ -150,6 +162,18 @@ int main(int argc, char *argv[])
            strcmp(arg, "--usage") == 0) {
             conf.help = true;
         }
+#define map(n, l)                             \
+    if(strcmp(arg, xstrcat(--no, -n)) == 0) { \
+        conf.no_show[l] = true;               \
+    }
+        map(fajr, 0);
+        map(sunrise, 1);
+        map(dhuhr, 2);
+        map(asr, 3);
+        /* map(sunset, 4); */
+        map(maghrib, 5);
+        map(isha, 6);
+#undef map
         argc2++;
     }
     if(conf.help) {
@@ -278,16 +302,19 @@ int main(int argc, char *argv[])
     } else if(!conf.show_future_only && (e)) { \
         s;                                     \
     }
+#define Y(n) (!conf.no_show[n])
 
-    X(print_time("Fajr:    ", fajr, pconf), now_suntime < fajr_suntime, true);
+    X(print_time("Fajr:    ", fajr, pconf), now_suntime < fajr_suntime, Y(0));
     X(print_time("Sunrise: ", sunrise, pconf), now_suntime < sunrise_suntime,
-      true);
-    X(print_time("Dhuhr:   ", dhuhr, pconf), now_suntime < dhuhr_suntime, true);
-    X(print_time("Asr:     ", asr, pconf), (now_suntime < asr_suntime), true);
+      Y(1));
+    X(print_time("Dhuhr:   ", dhuhr, pconf), now_suntime < dhuhr_suntime, Y(2));
+    X(print_time("Asr:     ", asr, pconf), (now_suntime < asr_suntime), Y(3));
     X(print_time("Sunset:  ", sunset, pconf),
-      (now_suntime < sunset_suntime) && conf.print_sunset, conf.print_sunset);
+      (now_suntime < sunset_suntime) && conf.print_sunset,
+      conf.print_sunset && Y(4));
     X(print_time("Maghrib: ", maghrib, pconf), now_suntime < maghrib_suntime,
-      true);
-    X(print_time("Isha:    ", isha, pconf), (now_suntime < isha_suntime), true);
+      Y(5));
+    X(print_time("Isha:    ", isha, pconf), (now_suntime < isha_suntime), Y(6));
 #undef X
+#undef Y
 }

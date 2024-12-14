@@ -39,6 +39,12 @@ Usage:
 	-ss, --sunset			print sunset time
 	-u, --utc			print times in UTC
 	-h, --help			this page
+	--no-fajr			don't print fajr
+	--no-sunrise			don't print sunrise
+	--no-dhuhr			don't print dhuhr
+	--no-asr			don't print asr
+	--no-maghrib			don't print maghrib
+	--no-isha			don't print isha
 	--usage				this page
 	-12h				print times in 12 hour format
 	-24h				print times in 24 hour format
