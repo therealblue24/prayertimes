@@ -1,5 +1,7 @@
 #include "prayertimes.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 /* Welcome to C */
 
@@ -195,7 +197,7 @@ num angle_A(num n, num lat, [[maybe_unused]] num lng, num dec)
     return (1. / 15.) * r2d(acos(upper / lower));
 }
 
-static void print_time_12h_no_sec(const char *l, timelabel t)
+static void print_time_12h_no_sec(const char *l, timelabel t, char **b)
 {
     int pm = t.hour >= 12;
     if(pm && t.hour != 12) {
@@ -204,11 +206,11 @@ static void print_time_12h_no_sec(const char *l, timelabel t)
     if(t.hour == 0)
         t.hour = 12;
     const char *am_or_pm[] = { "AM", "PM" };
-    printf("%s %2d:%02d %s\n", l, t.hour, t.minute, am_or_pm[pm]);
+    asprintf(b, "%s %2d:%02d %s\n", l, t.hour, t.minute, am_or_pm[pm]);
     return;
 }
 
-static void print_time_12h_sec(const char *l, timelabel t)
+static void print_time_12h_sec(const char *l, timelabel t, char **b)
 {
     int pm = t.hour >= 12;
     if(pm && t.hour != 12) {
@@ -217,40 +219,106 @@ static void print_time_12h_sec(const char *l, timelabel t)
     if(t.hour == 0)
         t.hour = 12;
     const char *am_or_pm[] = { "AM", "PM" };
-    printf("%s %2d:%02d:%02d %s\n", l, t.hour, t.minute, t.second,
-           am_or_pm[pm]);
+    asprintf(b, "%s %2d:%02d:%02d %s\n", l, t.hour, t.minute, t.second,
+             am_or_pm[pm]);
     return;
 }
-static void print_time_24h_no_sec(const char *l, timelabel t)
+static void print_time_24h_no_sec(const char *l, timelabel t, char **b)
 {
-    printf("%s %2d:%02d\n", l, t.hour, t.minute);
-    return;
-}
-
-static void print_time_24h_sec(const char *l, timelabel t)
-{
-    printf("%s %2d:%02d:%02d\n", l, t.hour, t.minute, t.second);
+    asprintf(b, "%s %2d:%02d\n", l, t.hour, t.minute);
     return;
 }
 
-void print_time(const char *l, timelabel t, print_conf_t pconf)
+static void print_time_24h_sec(const char *l, timelabel t, char **b)
 {
+    asprintf(b, "%s %2d:%02d:%02d\n", l, t.hour, t.minute, t.second);
+    return;
+}
+
+typedef struct color {
+    uint8_t r, g, b;
+} color;
+typedef struct colorp {
+    color b, e;
+} colorp;
+
+#define NOCOL                                \
+    {                                        \
+        { 255, 255, 255 }, \
+        { 255, 255, 255 } \
+}
+
+colorp times[7] = {
+    { { 8, 56, 212 },  { 245, 98, 7 }   },
+    { { 245, 98, 7 },  { 7, 118, 245 }  },
+    { { 7, 118, 245 }, { 7, 245, 118 }  },
+    { { 7, 245, 118 }, { 98, 33, 252 }  },
+    { { 98, 33, 252 }, { 124, 33, 252 } },
+    { { 98, 33, 252 }, { 245, 98, 7 }   },
+    { { 245, 98, 7 },  { 8, 56, 212 }   },
+};
+
+color mix(colorp s, int i, int l)
+{
+    float p2 = ((float)i) / ((float)(l - 1));
+    float p1 = 1 - p2;
+    float r = (p1 * s.b.r) + (p2 * s.e.r);
+    float g = (p1 * s.b.g) + (p2 * s.e.g);
+    float b = (p1 * s.b.b) + (p2 * s.e.b);
+    r *= 1.2, g *= 1.2, b *= 1.2;
+    if(r > 255)
+        r = 255;
+    if(g > 255)
+        g = 255;
+    if(b > 255)
+        b = 255;
+    return (color){ (uint8_t)r, (uint8_t)g, (uint8_t)b };
+}
+
+void setcol(color c)
+{
+    printf("\033[38;2;%d;%d;%dm", c.r, c.g, c.b);
+}
+
+void print_time(const char *l, timelabel t, print_conf_t pconf, int time)
+{
+    char *b = NULL;
     if(pconf.am_pm && !pconf.seconds) {
-        print_time_12h_no_sec(l, t);
-        return;
+        print_time_12h_no_sec(l, t, &b);
     }
     if(pconf.am_pm && pconf.seconds) {
-        print_time_12h_sec(l, t);
-        return;
+        print_time_12h_sec(l, t, &b);
     }
     if(!pconf.am_pm && !pconf.seconds) {
-        print_time_24h_no_sec(l, t);
-        return;
+        print_time_24h_no_sec(l, t, &b);
     }
     if(!pconf.am_pm && pconf.seconds) {
-        print_time_24h_sec(l, t);
+        print_time_24h_sec(l, t, &b);
+    }
+    if(!b) {
+        printf("ERROR: Failed to print time\n");
+        exit(EXIT_FAILURE);
+    }
+    if(!pconf.color) {
+        printf("%s", b);
         return;
     }
+    colorp colp = times[time];
+    color c;
+    int len = strlen(b);
+    int rl = 0;
+    for(int i = 0; i < len; i++) {
+        rl += b[i] != ' ';
+    }
+    int p = 0;
+    for(int i = 0; i < len; i++) {
+        c = mix(colp, p, rl - 1);
+        setcol(c);
+        putchar(b[i]);
+        p += b[i] != ' ';
+    }
+    printf("\033[0m");
+    return;
 }
 
 /* lat = latitude, lng = longitude, elev = elevation, Z = time zone,

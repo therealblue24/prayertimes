@@ -113,7 +113,7 @@ void show_help(void)
 
 int main(int argc, char *argv[])
 {
-    print_conf_t pconf = { .am_pm = true, .seconds = false };
+    print_conf_t pconf = { .am_pm = true, .seconds = false, .color = false };
     struct {
         bool silent_mode; /* only print times */
         bool show_future_only; /* only show future times */
@@ -161,6 +161,9 @@ int main(int argc, char *argv[])
            strcmp(arg, "-?") == 0 || strcmp(arg, "?") == 0 ||
            strcmp(arg, "--usage") == 0) {
             conf.help = true;
+        }
+        if(strcmp(arg, "-c") == 0 || strcmp(arg, "--color") == 0) {
+            pconf.color = true;
         }
 #define map(n, l)                             \
     if(strcmp(arg, xstrcat(--no, -n)) == 0) { \
@@ -304,17 +307,21 @@ int main(int argc, char *argv[])
     }
 #define Y(n) (!conf.no_show[n])
 
-    X(print_time("Fajr:    ", fajr, pconf), now_suntime < fajr_suntime, Y(0));
-    X(print_time("Sunrise: ", sunrise, pconf), now_suntime < sunrise_suntime,
+    X(print_time("Fajr:    ", fajr, pconf, 0), now_suntime < fajr_suntime,
+      Y(0));
+    X(print_time("Sunrise: ", sunrise, pconf, 1), now_suntime < sunrise_suntime,
       Y(1));
-    X(print_time("Dhuhr:   ", dhuhr, pconf), now_suntime < dhuhr_suntime, Y(2));
-    X(print_time("Asr:     ", asr, pconf), (now_suntime < asr_suntime), Y(3));
-    X(print_time("Sunset:  ", sunset, pconf),
+    X(print_time("Dhuhr:   ", dhuhr, pconf, 2), now_suntime < dhuhr_suntime,
+      Y(2));
+    X(print_time("Asr:     ", asr, pconf, 3), (now_suntime < asr_suntime),
+      Y(3));
+    X(print_time("Sunset:  ", sunset, pconf, 4),
       (now_suntime < sunset_suntime) && conf.print_sunset,
       conf.print_sunset && Y(4));
-    X(print_time("Maghrib: ", maghrib, pconf), now_suntime < maghrib_suntime,
+    X(print_time("Maghrib: ", maghrib, pconf, 5), now_suntime < maghrib_suntime,
       Y(5));
-    X(print_time("Isha:    ", isha, pconf), (now_suntime < isha_suntime), Y(6));
+    X(print_time("Isha:    ", isha, pconf, 6), (now_suntime < isha_suntime),
+      Y(6));
 #undef X
 #undef Y
 }

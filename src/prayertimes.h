@@ -42,10 +42,11 @@ void calc_schedule(double lat, double lng, double elev, double Z, time_t time,
 typedef struct print_conf {
     bool am_pm; /* AM/PM time? */
     bool seconds; /* include seconds */
+    bool color; /* c o l o r */
 } print_conf_t;
 
 /* print a time */
-void print_time(const char *l, timelabel t, print_conf_t conf);
+void print_time(const char *l, timelabel t, print_conf_t conf, int time);
 
 /* suntime -> timelabel */
 timelabel sun2norm(double suntime);
