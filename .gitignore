@@ -4,3 +4,4 @@ bin
 .clang-format
 *.bkp
 insert_funny_joke_here
+tst.*
