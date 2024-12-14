@@ -17,6 +17,8 @@ double calc_jd(double jdn, double hour, double minute, double second);
 double jd_now(time_t now);
 /* calculate julian day given struct tm */
 double jd_tm(struct tm *t);
+/* give current suntime given timestamp */
+double suntime_now(time_t now);
 /* equation of time */
 double eqt(double jd);
 /* sun declination */

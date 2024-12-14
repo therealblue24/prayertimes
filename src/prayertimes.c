@@ -79,6 +79,13 @@ num jdn_now(time_t now)
     return jdn_now;
 }
 
+/* suntime from unix timestamp */
+num suntime_now(time_t now)
+{
+    time_t d = now % 86400;
+    return ((num)d / 3600.0);
+}
+
 /* julian day from struct tm */
 num jd_tm(struct tm *t)
 {

@@ -31,10 +31,16 @@ Please do note that even though efforts have been put to make the calculation as
 
 ## Command Line Options
 
-`-12h`      - print in 12 hour format
-
-`-24h`      - print in 24 hour format
-
-`--seconds` - print seconds of the time
-
-`--reconf`  - reconfigure the config
+```
+Usage:
+	-s, --silent			only print times
+	-f, --show-future-only		show only future times
+	-rc, --reconfigure		reconfigure location, method
+	-ss, --sunset			print sunset time
+	-u, --utc			print times in UTC
+	-h, --help			this page
+	--usage				this page
+	-12h				print times in 12 hour format
+	-24h				print times in 24 hour format
+	--seconds			print seconds along with time
+```

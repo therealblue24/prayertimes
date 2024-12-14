@@ -84,11 +84,83 @@ label0:;
     putchar('\n');
 }
 
-int main(int argc, char *argv[])
+void show_help(void)
 {
     printf(
-        "therealblue24's prayer time calculator\nCopyright (C) 2024 therealblue24 (under MIT license).\n");
-    printf("to reconfigure, please run '%s --reconf'\n\n", argv[0]);
+        "therealblue24's prayer time calculator\nCopyright (C) 2024 therealblue24 (under MIT license).\n\n");
+    printf("Usage:\n");
+    printf("\t-s, --silent\t\t\tonly print times\n");
+    printf("\t-f, --show-future-only\t\tshow only future times\n");
+    printf("\t-rc, --reconfigure\t\treconfigure location, method\n");
+    printf("\t-ss, --sunset\t\t\tprint sunset time\n");
+    printf("\t-u, --utc\t\t\tprint times in UTC\n");
+    printf("\t-h, --help\t\t\tthis page\n");
+    printf("\t--usage\t\t\t\tthis page\n");
+    printf("\t-12h\t\t\t\tprint times in 12 hour format\n");
+    printf("\t-24h\t\t\t\tprint times in 24 hour format\n");
+    printf("\t--seconds\t\t\tprint seconds along with time\n");
+}
+
+int main(int argc, char *argv[])
+{
+    print_conf_t pconf = { .am_pm = true, .seconds = false };
+    struct {
+        bool silent_mode; /* only print times */
+        bool show_future_only; /* only show future times */
+        bool reconf; /* reconfigure? */
+        bool print_sunset; /* print sunset */
+        bool utc; /* use UTC */
+        bool help; /* help */
+    } conf = { .silent_mode = false,
+               .show_future_only = false,
+               .reconf = false,
+               .print_sunset = false,
+               .utc = false,
+               .help = false };
+
+    int argc2 = 1;
+    while(argc2 < argc) {
+        const char *arg = argv[argc2];
+        if(strcmp(arg, "-12h") == 0) {
+            pconf.am_pm = true;
+        }
+        if(strcmp(arg, "-24h") == 0) {
+            pconf.am_pm = false;
+        }
+        if(strcmp(arg, "--seconds") == 0) {
+            pconf.seconds = true;
+        }
+        if(strcmp(arg, "-s") == 0 || strcmp(arg, "--silent") == 0) {
+            conf.silent_mode = true;
+        }
+        if(strcmp(arg, "-f") == 0 || strcmp(arg, "--show-future-only") == 0) {
+            conf.show_future_only = true;
+        }
+        if(strcmp(arg, "--reconf") == 0 || strcmp(arg, "-rc") == 0) {
+            conf.reconf = true;
+        }
+        if(strcmp(arg, "-ss") == 0 || strcmp(arg, "--sunset") == 0) {
+            conf.print_sunset = true;
+        }
+        if(strcmp(arg, "-u") == 0 || strcmp(arg, "--utc") == 0) {
+            conf.utc = true;
+        }
+        if(strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0 ||
+           strcmp(arg, "-?") == 0 || strcmp(arg, "?") == 0 ||
+           strcmp(arg, "--usage") == 0) {
+            conf.help = true;
+        }
+        argc2++;
+    }
+    if(conf.help) {
+        show_help();
+        return 0;
+    }
+    if(!conf.silent_mode) {
+        printf(
+            "therealblue24's prayer time calculator\nCopyright (C) 2024 therealblue24 (under MIT license).\n");
+        printf("to reconfigure, please run '%s --reconf'\n\n", argv[0]);
+    }
 
     char *home = getenv("HOME");
     if(!home) {
@@ -132,33 +204,15 @@ int main(int argc, char *argv[])
             exit(EXIT_FAILURE);
         }
     }
-    if(argc > 1) {
-        if(strcmp(argv[1], "--reconf") == 0) {
-            if(!configured)
-                init_conf(rpath);
-            configured = true;
-        }
-    }
 
-    print_conf_t pconf = { .am_pm = true, .seconds = false };
-
-    int argc2 = 1;
-    while(argc2 < argc) {
-        const char *arg = argv[argc2];
-        if(strcmp(arg, "-12h") == 0) {
-            pconf.am_pm = true;
-        }
-        if(strcmp(arg, "-24h") == 0) {
-            pconf.am_pm = false;
-        }
-        if(strcmp(arg, "--seconds") == 0) {
-            pconf.seconds = true;
-        }
-        argc2++;
+    if(!configured && conf.reconf) {
+        init_conf(rpath);
+        configured = true;
     }
 
     double lat, lng, elev, ang = 0;
     time_t now = time(NULL);
+    double now_suntime = suntime_now(now);
 
     FILE *f = fopen(rpath, "rb");
     fread(&lng, sizeof(double), 1, f);
@@ -173,41 +227,67 @@ int main(int argc, char *argv[])
     free(dpath);
 
     struct tm tm = *localtime(&now);
+
+    long off = 0;
+    const char *zone = NULL;
 #ifdef __APPLE__
-    double Z = (double)tm.tm_gmtoff / (60 * 60);
-    printf("Time zone: %g hours (%s)\n", Z, tm.tm_zone);
+    off = tm.tm_gmtoff;
+    zone = tm.tm_zone;
 #else
     /* Linux doesn't have tm.tm_gmtoff and tm.tm_zone. Why??????? */
     struct tm utc_tm = *gmtime(&now);
-    long off = mktime(&tm) - mktime(&utc_tm);
-    double Z = (double)off / (60 * 60);
-    printf("Time zone: %g hours (zone N/A)\n", Z);
+    off = mktime(&tm) - mktime(&utc_tm);
 #endif /* __APPLE__ */
 
-    printf("Prayer times for %s, %s %d%s, %d:\n", weekdays[tm.tm_wday],
-           months[tm.tm_mon], tm.tm_mday, prefixes[tm.tm_mday],
-           tm.tm_year + 1900);
+    double Z = (double)off / 3600.0;
+    if(conf.utc) {
+        Z = 0;
+    }
+    now_suntime += Z;
+    if(zone && !conf.silent_mode) {
+        printf("Time zone: %g hours (%s)\n", Z, zone);
+    } else if(!conf.silent_mode) {
+        printf("Time zone: %g hours (zone N/A)\n", Z);
+    }
+
+    if(!conf.silent_mode) {
+        printf("Prayer times for %s, %s %d%s, %d:\n", weekdays[tm.tm_wday],
+               months[tm.tm_mon], tm.tm_mday, prefixes[tm.tm_mday],
+               tm.tm_year + 1900);
+    }
     double t[7] = { 0 };
     calc_schedule(lat, lng, elev, Z, now, t, ang);
-    //double bedtime_ = ((t[5] + t[6]) / 2.) + 1;
-    timelabel fajr = sun2norm(t[0]);
-    timelabel sunrise = sun2norm(t[1]);
-    timelabel dhuhr = sun2norm(t[2]);
-    timelabel asr = sun2norm(t[3]);
-    //timelabel sunset = sun2norm(t[4]);
-    timelabel maghrib = sun2norm(t[5]);
-    timelabel isha = sun2norm(t[6]);
-    //timelabel bedtime = sun2norm(bedtime_);
+    double fajr_suntime = t[0];
+    double sunrise_suntime = t[1];
+    double dhuhr_suntime = t[2];
+    double asr_suntime = t[3];
+    double sunset_suntime = t[4];
+    double maghrib_suntime = t[5];
+    double isha_suntime = t[6];
 
-    //printf("WARNING: DO NOT 100%% TRUST THESE TIMES.\n");
-    //printf("WARNING: Asr may not be accurate.\n");
-    print_time("Fajr:    ", fajr, pconf);
-    print_time("Sunrise: ", sunrise, pconf);
-    print_time("Dhuhr:   ", dhuhr, pconf);
-    print_time("Asr:     ", asr, pconf);
-    //print_time("Sunset:  ", sunset); useless in most cases
-    print_time("Maghrib: ", maghrib, pconf);
-    print_time("Isha:    ", isha, pconf);
-    //putchar('\n');
-    //print_time("Bedtime: ", bedtime);
+    timelabel fajr = sun2norm(fajr_suntime);
+    timelabel sunrise = sun2norm(sunrise_suntime);
+    timelabel dhuhr = sun2norm(dhuhr_suntime);
+    timelabel asr = sun2norm(asr_suntime);
+    timelabel sunset = sun2norm(sunset_suntime);
+    timelabel maghrib = sun2norm(maghrib_suntime);
+    timelabel isha = sun2norm(isha_suntime);
+#define X(s, c, e)                             \
+    if(conf.show_future_only && (c) && (e)) {  \
+        s;                                     \
+    } else if(!conf.show_future_only && (e)) { \
+        s;                                     \
+    }
+
+    X(print_time("Fajr:    ", fajr, pconf), now_suntime < fajr_suntime, true);
+    X(print_time("Sunrise: ", sunrise, pconf), now_suntime < sunrise_suntime,
+      true);
+    X(print_time("Dhuhr:   ", dhuhr, pconf), now_suntime < dhuhr_suntime, true);
+    X(print_time("Asr:     ", asr, pconf), (now_suntime < asr_suntime), true);
+    X(print_time("Sunset:  ", sunset, pconf),
+      (now_suntime < sunset_suntime) && conf.print_sunset, conf.print_sunset);
+    X(print_time("Maghrib: ", maghrib, pconf), now_suntime < maghrib_suntime,
+      true);
+    X(print_time("Isha:    ", isha, pconf), (now_suntime < isha_suntime), true);
+#undef X
 }
