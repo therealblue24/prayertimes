@@ -39,6 +39,7 @@ Usage:
 	-ss, --sunset			print sunset time
 	-u, --utc			print times in UTC
 	-h, --help			this page
+	-c, --color			colorize prayer times (requires truecolor support)
 	--no-fajr			don't print fajr
 	--no-sunrise			don't print sunrise
 	--no-dhuhr			don't print dhuhr

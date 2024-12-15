@@ -99,6 +99,8 @@ void show_help(void)
     printf("\t-ss, --sunset\t\t\tprint sunset time\n");
     printf("\t-u, --utc\t\t\tprint times in UTC\n");
     printf("\t-h, --help\t\t\tthis page\n");
+    printf(
+        "\t-c, --color\t\t\tcolorize prayer times (requires truecolor support)\n");
     printf("\t--no-fajr\t\t\tdon't print fajr\n");
     printf("\t--no-sunrise\t\t\tdon't print sunrise\n");
     printf("\t--no-dhuhr\t\t\tdon't print dhuhr\n");
