@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
     if(conf.utc) {
         Z = 0;
     }
-    now_suntime += Z;
+    now_suntime = fmod(now_suntime + Z + 24, 24.0);
     if(zone && !conf.silent_mode) {
         printf("Time zone: %g hours (%s)\n", Z, zone);
     } else if(!conf.silent_mode) {
