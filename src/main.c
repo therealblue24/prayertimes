@@ -124,13 +124,14 @@ int main(int argc, char *argv[])
         bool utc; /* use UTC */
         bool help; /* help */
         bool no_show[7]; /* dont show certain time */
-    } conf = { .silent_mode = false,
-               .show_future_only = false,
-               .reconf = false,
-               .print_sunset = false,
-               .utc = false,
-               .help = false,
-               .no_show = { 0 } };
+    } conf = {
+        .silent_mode = false,
+        .show_future_only = false,
+        .reconf = false,
+        .print_sunset = false,
+        .utc = false,
+        .help = false,
+    };
 
     int argc2 = 1;
     while(argc2 < argc) {

@@ -351,12 +351,12 @@ void calc_schedule(num lat, num lng, num elev, num Z, time_t time, num *times,
     num asr = dhuhr + asr_shadow;
     // Fajr is an angle before dhuhr
     num fajr = dhuhr - angle_T(fajr_angle + evfactor, lng, lat, decl);
-    // Sunrise is fajr with an angle of 5/6 degrees
+    // Sunrise is dhuhr with an angle of 5/6 degrees
     num sunrise = dhuhr - angle_T((5. / 6.) + evfactor, lng, lat, decl);
-    // Sunset is dhuhr added on an angle of 29/12 degrees
-    num sunset = dhuhr + angle_T((29. / 12.) + evfactor, lng, lat, decl);
-    // Maghrib is an added few minutes after sunset for precaution
-    num maghrib = sunset + (1. / 15.);
+    // Sunset is dhuhr added on an angle of 5/6 degrees
+    num sunset = dhuhr + angle_T((5. / 6.) + evfactor, lng, lat, decl);
+    // Maghrib is 15 minutes after sunset
+    num maghrib = sunset + (1. / 4.);
     // Isha is an angle after dhuhr
     num isha = dhuhr + angle_T(isha_angle + evfactor, lng, lat, decl);
 
