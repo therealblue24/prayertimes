@@ -11,7 +11,7 @@
 #include <assert.h>
 #include "prayertimes.h"
 
-#define VERSION "1.2"
+#define VERSION "1.2.1"
 
 #define _str(x)       x
 #define xstr(x)       _str(#x)
@@ -405,7 +405,13 @@ int main(int argc, char *argv[])
     double isha_suntime = t[6];
 
     double imsak_suntime = fajr_suntime - (conf.imsak_minutes / 60);
-    double midnight_suntime = dhuhr_suntime + 12;
+    double midnight_suntime =
+        bound_hour((sunset_suntime + fajr_suntime + 24) / 2);
+    double calc_error = (fabs(dhuhr_suntime - (midnight_suntime + 12)));
+    double rel_max_error = 30 * calc_error;
+
+    double rel_max_mins = floor(rel_max_error);
+    double rel_max_secs = floor((rel_max_error - rel_max_mins) * 60);
 
     timelabel fajr = sun2norm(fajr_suntime);
     timelabel sunrise = sun2norm(sunrise_suntime);
@@ -447,6 +453,9 @@ int main(int argc, char *argv[])
     }
     X(print_time("Midnight: ", midnight, pconf, 7),
       now_suntime < midnight_suntime, conf.midnight);
+
+    printf("\nRelative maximum error: ±%g minutes and %g seconds\n",
+           rel_max_mins, rel_max_secs);
 #undef X
 #undef Y
 }
