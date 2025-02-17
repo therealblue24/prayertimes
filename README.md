@@ -3,6 +3,18 @@ Prayer time calculation software, coded in C.
 
 Currently there is only a terminal CLI, library coming soon (TM)! 
 
+## Features
+- Calculating the 5 prayer times
+- Sunset & sunrise
+- Midnight
+- Imsak
+- 12 & 24-hour support
+- Customizable fajr, asr, isha angle
+- Customizable maghrib, imsak minutes
+- Can select which times to show and not show
+- Can show seconds
+- Elevation support, increasing accuracy
+
 ## Startup
 
 Build the project using `make`.
@@ -45,7 +57,7 @@ Usage:
 	--midnight			print midnight
 	-u, --utc			print times in UTC
 	-h, --help			this page
-	--version			print version of bake
+	--version			print version of prayertimes
 	-c, --color			colorize prayer times (requires truecolor support)
 	--no-fajr			don't print fajr
 	--no-sunrise			don't print sunrise
