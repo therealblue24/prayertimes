@@ -144,7 +144,7 @@ void show_help(bool version)
     printf("\t--midnight\t\t\tprint midnight\n");
     printf("\t-u, --utc\t\t\tprint times in UTC\n");
     printf("\t-h, --help\t\t\tthis page\n");
-    printf("\t--version\t\t\tprint version of bake\n");
+    printf("\t--version\t\t\tprint version of prayertimes\n");
     printf(
         "\t-c, --color\t\t\tcolorize prayer times (requires truecolor support)\n");
     printf("\t--no-fajr\t\t\tdon't print fajr\n");
