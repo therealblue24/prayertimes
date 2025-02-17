@@ -454,8 +454,8 @@ int main(int argc, char *argv[])
     X(print_time("Midnight: ", midnight, pconf, 7),
       now_suntime < midnight_suntime, conf.midnight);
 
-    printf("\nRelative maximum error: ±%g minutes and %g seconds\n",
-           rel_max_mins, rel_max_secs);
+    printf("Relative maximum error: ±%g minutes and %g seconds\n", rel_max_mins,
+           rel_max_secs);
 #undef X
 #undef Y
 }
