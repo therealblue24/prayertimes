@@ -248,7 +248,7 @@ typedef struct colorp {
         { 255, 255, 255 } \
 }
 
-colorp times[7] = {
+colorp times[8] = {
     /* All prefixed with FINDME: so that I can search for them easily. */
     /* FINDME:fajr    */
     { { 227, 223, 211 }, { 243, 245, 149 } },
@@ -264,6 +264,8 @@ colorp times[7] = {
     { { 98, 33, 252 },   { 245, 98, 7 }    },
     /* FINDME:isha    */
     { { 245, 98, 7 },    { 75, 68, 92 }    },
+    /* FINDME:midnight*/
+    { { 255, 255, 255 }, { 128, 128, 128 } },
 };
 
 color mix(colorp s, int i, int l)
@@ -331,9 +333,17 @@ void print_time(const char *l, timelabel t, print_conf_t pconf, int time)
 
 /* lat = latitude, lng = longitude, elev = elevation, Z = time zone,
    time = unix timestamp, times = pointer to array to store times, 
-   asr_angle = asr angle */
+   conf = configuration */
+
+/* Default conf is:
+ * asr_angle: <depends>
+ * fajr_angle: 13.5^
+ * isha_angle: 14.5^
+ * maghrib_minutes: 15 min
+ */
+
 void calc_schedule(num lat, num lng, num elev, num Z, time_t time, num *times,
-                   double asr_angle)
+                   times_conf conf)
 {
     num jd = jdn_now(time);
     num eq_t = eqt(jd); // equation of time
@@ -341,24 +351,21 @@ void calc_schedule(num lat, num lng, num elev, num Z, time_t time, num *times,
     num evfactor = 0.0347 * sqrt(elev); // elevation factor
     num dhuhr = 12 - eq_t + (Z - (lng / 15)); // dhuhr time
 
-    const num fajr_angle = 13.5;
-    const num isha_angle = 14.5;
-
     // Asr is when the shadow of an object is (angle)ths of its length
     // for shia: 2/7
     // for sunni: 1 || 2
-    num asr_shadow = angle_A(asr_angle, lat, lng, decl);
+    num asr_shadow = angle_A(conf.asr_angle, lat, lng, decl);
     num asr = dhuhr + asr_shadow;
     // Fajr is an angle before dhuhr
-    num fajr = dhuhr - angle_T(fajr_angle + evfactor, lng, lat, decl);
+    num fajr = dhuhr - angle_T(conf.fajr_angle + evfactor, lng, lat, decl);
     // Sunrise is dhuhr with an angle of 5/6 degrees
     num sunrise = dhuhr - angle_T((5. / 6.) + evfactor, lng, lat, decl);
     // Sunset is dhuhr added on an angle of 5/6 degrees
     num sunset = dhuhr + angle_T((5. / 6.) + evfactor, lng, lat, decl);
     // Maghrib is 15 minutes after sunset
-    num maghrib = sunset + (1. / 4.);
+    num maghrib = sunset + (conf.maghrib_minutes / 60);
     // Isha is an angle after dhuhr
-    num isha = dhuhr + angle_T(isha_angle + evfactor, lng, lat, decl);
+    num isha = dhuhr + angle_T(conf.isha_angle + evfactor, lng, lat, decl);
 
     times[0] = fajr;
     times[1] = sunrise;

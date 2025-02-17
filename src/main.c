@@ -91,12 +91,14 @@ label0:;
 void show_help(void)
 {
     printf(
-        "therealblue24's prayer time calculator\nCopyright (C) 2024 therealblue24 (under MIT license).\n\n");
+        "therealblue24's prayer time calculator\nCopyright (C) 2025 therealblue24 (under the MIT license).\n\n");
     printf("Usage:\n");
     printf("\t-s, --silent\t\t\tonly print times\n");
     printf("\t-f, --show-future-only\t\tshow only future times\n");
     printf("\t-rc, --reconfigure\t\treconfigure location, method\n");
     printf("\t-ss, --sunset\t\t\tprint sunset time\n");
+    printf("\t--imsak\t\t\t\tprint imsak time\n");
+    printf("\t--midnight\t\t\tprint midnight\n");
     printf("\t-u, --utc\t\t\tprint times in UTC\n");
     printf("\t-h, --help\t\t\tthis page\n");
     printf(
@@ -111,6 +113,11 @@ void show_help(void)
     printf("\t-12h\t\t\t\tprint times in 12 hour format\n");
     printf("\t-24h\t\t\t\tprint times in 24 hour format\n");
     printf("\t--seconds\t\t\tprint seconds along with time\n");
+    printf("\t-fa, --fajr-angle\t\tset fajr angle\n");
+    printf("\t-aa, --asr-angle\t\tset custom asr angle\n");
+    printf("\t-ia, --isha-angle\t\tset isha angle\n");
+    printf("\t-mm, --maghrib-minutes\t\tset maghrib minutes\n");
+    printf("\t-im, --imsak-minutes\t\tset imsak minutes\n");
 }
 
 int main(int argc, char *argv[])
@@ -124,6 +131,10 @@ int main(int argc, char *argv[])
         bool utc; /* use UTC */
         bool help; /* help */
         bool no_show[7]; /* dont show certain time */
+        times_conf timeconf; /* time configuration */
+        bool imsak; /* print imsak */
+        bool midnight; /* print midnight */
+        double imsak_minutes; /* minutes for imsak */
     } conf = {
         .silent_mode = false,
         .show_future_only = false,
@@ -131,6 +142,13 @@ int main(int argc, char *argv[])
         .print_sunset = false,
         .utc = false,
         .help = false,
+        .midnight = false,
+        .imsak = false,
+        .imsak_minutes = 15.0,
+        .timeconf = { .asr_angle = 0,
+                     .fajr_angle = 13.5,
+                     .isha_angle = 14.5,
+                     .maghrib_minutes = 15 },
     };
 
     int argc2 = 1;
@@ -167,6 +185,32 @@ int main(int argc, char *argv[])
         }
         if(strcmp(arg, "-c") == 0 || strcmp(arg, "--color") == 0) {
             pconf.color = true;
+        }
+        if(strcmp(arg, "-fa") == 0 || strcmp(arg, "--fajr-angle") == 0) {
+            double fajr_angle = strtod(argv[++argc2], NULL);
+            conf.timeconf.fajr_angle = fajr_angle;
+        }
+        if(strcmp(arg, "-aa") == 0 || strcmp(arg, "--asr-angle") == 0) {
+            double asr_angle = strtod(argv[++argc2], NULL);
+            conf.timeconf.asr_angle = asr_angle;
+        }
+        if(strcmp(arg, "-ia") == 0 || strcmp(arg, "--isha-angle") == 0) {
+            double isha_angle = strtod(argv[++argc2], NULL);
+            conf.timeconf.isha_angle = isha_angle;
+        }
+        if(strcmp(arg, "-mm") == 0 || strcmp(arg, "--maghrib-minutes") == 0) {
+            double maghrib_minutes = strtod(argv[++argc2], NULL);
+            conf.timeconf.maghrib_minutes = maghrib_minutes;
+        }
+        if(strcmp(arg, "--imsak") == 0) {
+            conf.imsak = true;
+        }
+        if(strcmp(arg, "--midnight") == 0) {
+            conf.midnight = true;
+        }
+        if(strcmp(arg, "-im") == 0 || strcmp(arg, "--imsak-minutes") == 0) {
+            double imsak_minutes = strtod(argv[++argc2], NULL);
+            conf.imsak_minutes = imsak_minutes;
         }
 #define map(n, l)                             \
     if(strcmp(arg, xstrcat(--no, -n)) == 0) { \
@@ -286,7 +330,10 @@ int main(int argc, char *argv[])
                tm.tm_year + 1900);
     }
     double t[7] = { 0 };
-    calc_schedule(lat, lng, elev, Z, now, t, ang);
+
+    conf.timeconf.asr_angle = ang;
+
+    calc_schedule(lat, lng, elev, Z, now, t, conf.timeconf);
     double fajr_suntime = t[0];
     double sunrise_suntime = t[1];
     double dhuhr_suntime = t[2];
@@ -295,6 +342,9 @@ int main(int argc, char *argv[])
     double maghrib_suntime = t[5];
     double isha_suntime = t[6];
 
+    double imsak_suntime = fajr_suntime - (conf.imsak_minutes / 60);
+    double midnight_suntime = dhuhr_suntime + 12;
+
     timelabel fajr = sun2norm(fajr_suntime);
     timelabel sunrise = sun2norm(sunrise_suntime);
     timelabel dhuhr = sun2norm(dhuhr_suntime);
@@ -302,6 +352,9 @@ int main(int argc, char *argv[])
     timelabel sunset = sun2norm(sunset_suntime);
     timelabel maghrib = sun2norm(maghrib_suntime);
     timelabel isha = sun2norm(isha_suntime);
+    timelabel imsak = sun2norm(imsak_suntime);
+    timelabel midnight = sun2norm(midnight_suntime);
+
 #define X(s, c, e)                             \
     if(conf.show_future_only && (c) && (e)) {  \
         s;                                     \
@@ -310,6 +363,8 @@ int main(int argc, char *argv[])
     }
 #define Y(n) (!conf.no_show[n])
 
+    X(print_time("Imsak:   ", imsak, pconf, 0), now_suntime < imsak_suntime,
+      conf.imsak);
     X(print_time("Fajr:    ", fajr, pconf, 0), now_suntime < fajr_suntime,
       Y(0));
     X(print_time("Sunrise: ", sunrise, pconf, 1), now_suntime < sunrise_suntime,
@@ -325,6 +380,11 @@ int main(int argc, char *argv[])
       Y(5));
     X(print_time("Isha:    ", isha, pconf, 6), (now_suntime < isha_suntime),
       Y(6));
+    if(conf.midnight) {
+        putchar('\n');
+    }
+    X(print_time("Midnight: ", midnight, pconf, 7),
+      now_suntime < midnight_suntime, conf.midnight);
 #undef X
 #undef Y
 }

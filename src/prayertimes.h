@@ -27,6 +27,13 @@ double dec(double jd);
 double angle_T(double a, double lng, double lat, double dec);
 /* A angle function */
 double angle_A(double n, double lng, double lat, double dec);
+
+typedef struct {
+    double asr_angle; /* angle of Asr */
+    double fajr_angle, isha_angle; /* angles of Fajr and Isha */
+    double maghrib_minutes; /* how much minutes after [sunset] is maghrib */
+} times_conf;
+
 /* calculate a prayer time schedule, given:
  * lat: latitude
  * lng: longitude
@@ -34,10 +41,10 @@ double angle_A(double n, double lng, double lat, double dec);
  * Z: timezone
  * time: unix timestamp
  * times: array to store prayer times in
- * asr_angle: angle for asr
+ * conf: configuration
  */
 void calc_schedule(double lat, double lng, double elev, double Z, time_t time,
-                   double *times, double asr_angle);
+                   double *times, times_conf conf);
 
 typedef struct print_conf {
     bool am_pm; /* AM/PM time? */

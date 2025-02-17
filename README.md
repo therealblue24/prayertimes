@@ -1,5 +1,7 @@
 # Prayer Times
-Prayer time calculation software
+Prayer time calculation software, coded in C.
+
+Currently there is only a terminal CLI, library coming soon (TM)! 
 
 ## Startup
 
@@ -31,12 +33,16 @@ Please do note that even though efforts have been put to make the calculation as
 
 ## Command Line Options
 
+`prayertimes -h`:
+
 ```
 Usage:
 	-s, --silent			only print times
 	-f, --show-future-only		show only future times
 	-rc, --reconfigure		reconfigure location, method
 	-ss, --sunset			print sunset time
+	--imsak				print imsak time
+	--midnight			print midnight
 	-u, --utc			print times in UTC
 	-h, --help			this page
 	-c, --color			colorize prayer times (requires truecolor support)
@@ -50,4 +56,9 @@ Usage:
 	-12h				print times in 12 hour format
 	-24h				print times in 24 hour format
 	--seconds			print seconds along with time
+	-fa, --fajr-angle		set fajr angle
+	-aa, --asr-angle		set custom asr angle
+	-ia, --isha-angle		set isha angle
+	-mm, --maghrib-minutes		set maghrib minutes
+	-im, --imsak-minutes		set imsak minutes
 ```
