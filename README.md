@@ -45,6 +45,7 @@ Usage:
 	--midnight			print midnight
 	-u, --utc			print times in UTC
 	-h, --help			this page
+	--version			print version of bake
 	-c, --color			colorize prayer times (requires truecolor support)
 	--no-fajr			don't print fajr
 	--no-sunrise			don't print sunrise
