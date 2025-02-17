@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <assert.h>
 #include "prayertimes.h"
 
 #define _str(x)       x
@@ -37,19 +38,38 @@ static const char *months[] = { "January",   "Feburary", "March",    "April",
 static const char *weekdays[] = { "Sunday",   "Monday", "Tuesday",  "Wednesday",
                                   "Thursday", "Friday", "Saturday", NULL };
 
+void zfgets(char *buf, int size, FILE *f)
+{
+    memset(buf, 0, size);
+    char *v = fgets(buf, size, f);
+    if(!v) {
+        fprintf(stderr, "ERROR: Failed to read stdin: %s\n", strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    for(int i = 0; i < size; i++) {
+        if(buf[i] == '\n' || buf[i] == '\r') {
+            buf[i] = '\0';
+        }
+    }
+    return;
+}
+
 void init_conf(char *path)
 {
+    char b[512] = { 0 };
     double lat = 0, lng = 0, elev = 0, ang = 0;
     printf("Prayer time configurer\n");
     printf("Latitude: ");
-    fscanf(stdin, "%lf", &lat);
+    zfgets(b, sizeof(b), stdin);
+    lat = strtod(b, NULL);
     printf("Longitude: ");
-    fscanf(stdin, "%lf", &lng);
+    zfgets(b, sizeof(b), stdin);
+    lng = strtod(b, NULL);
     printf("Elevation in meters (enter 0 if you don't know): ");
-    fscanf(stdin, "%lf", &elev);
-    char b[512] = { 0 };
+    zfgets(b, sizeof(b), stdin);
+    elev = strtod(b, NULL);
     printf("Shia or Sunni?: ");
-    fscanf(stdin, "%s", b);
+    zfgets(b, sizeof(b), stdin);
     for(int i = 0; i < 512; i++) {
         if(b[i] == '\n' || b[i] == '\r') {
             b[i] = 0;
@@ -62,7 +82,8 @@ void init_conf(char *path)
     } else if(strcmp(b, "sunni") == 0) {
 label0:;
         printf("Shafi'i (1) or Hanafi (2) ?: ");
-        fscanf(stdin, "%lf", &ang);
+        zfgets(b, sizeof(b), stdin);
+        ang = strtod(b, NULL);
         if(ang != 1 || ang != 2) {
             /* the legend of sisyphus */
             goto label0;
@@ -73,16 +94,20 @@ label0:;
     }
     printf("Ok, writing binary config file... \n");
 
-    /* Stupid workaround to fix a segfault. I don't know how to solve the bug properly. */
     FILE *f = fopen(path, "wb");
+    if(!f) {
+        fprintf(stderr, "ERROR: Failed to open config file: %s\n",
+                strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     /* who cares you are not spreading this config file */
-    fwrite(&lng, sizeof(double), 1, f);
-    fwrite(&lat, sizeof(double), 1, f);
-    fwrite(&ang, sizeof(double), 1, f);
+    assert(fwrite(&lng, sizeof(double), 1, f));
+    assert(fwrite(&lat, sizeof(double), 1, f));
+    assert(fwrite(&ang, sizeof(double), 1, f));
     /* seperated so that it doesn't ruin alignment */
-    fwrite(&elev, sizeof(double), 1, f);
+    assert(fwrite(&elev, sizeof(double), 1, f));
 
-    fflush(f);
+    assert(fflush(f) == 0);
 
     fclose(f); /* swag */
     putchar('\n');
@@ -238,14 +263,19 @@ int main(int argc, char *argv[])
 
     char *home = getenv("HOME");
     if(!home) {
-        fprintf(stderr, "failed to obtain $HOME: %s\n", strerror(errno));
+        fprintf(stderr, "ERROR: failed to obtain $HOME: %s\n", strerror(errno));
         return 1;
     }
 
     bool configured = false;
 
-    char *dpath = malloc(1024);
-    char *rpath = malloc(1024);
+    char *dpath = calloc(1, 1024);
+    char *rpath = calloc(1, 1024);
+    if(!dpath || !rpath) {
+        fprintf(stderr, "ERROR: Failed to allocate memory. ENOMEM?: %s\n",
+                strerror(errno));
+        exit(EXIT_FAILURE);
+    }
     strlcpy(rpath, home, 1024);
     strlcpy(dpath, home, 1024);
     strlcat(dpath, "/.config/prayertimes", 1024);
@@ -253,14 +283,14 @@ int main(int argc, char *argv[])
 
     if(access(dpath, F_OK) == -1) {
         if(errno == ENOENT) {
-            printf("Creating directory\n");
+            printf("Creating config directory\n");
             if(mkdir(dpath, 0755) == -1) {
-                fprintf(stderr, "uh oh! unable to create %s: %s\n", dpath,
+                fprintf(stderr, "ERROR: unable to create %s: %s\n", dpath,
                         strerror(errno));
                 return 1;
             }
         } else {
-            fprintf(stderr, "uh oh! unable to access %s: %s\n", dpath,
+            fprintf(stderr, "ERROR: unable to access %s: %s\n", dpath,
                     strerror(errno));
             return 1;
         }
@@ -273,7 +303,7 @@ int main(int argc, char *argv[])
                 init_conf(rpath);
             configured = true;
         } else {
-            fprintf(stderr, "uh oh! unable to access %s: %s\n", rpath,
+            fprintf(stderr, "ERROR: unable to access %s: %s\n", rpath,
                     strerror(errno));
             exit(EXIT_FAILURE);
         }
@@ -289,11 +319,16 @@ int main(int argc, char *argv[])
     double now_suntime = suntime_now(now);
 
     FILE *f = fopen(rpath, "rb");
-    fread(&lng, sizeof(double), 1, f);
-    fread(&lat, sizeof(double), 1, f);
-    fread(&ang, sizeof(double), 1, f);
+    if(!f) {
+        fprintf(stderr, "ERROR: Failed to open configuration file: %s\n",
+                strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    assert(fread(&lng, sizeof(double), 1, f));
+    assert(fread(&lat, sizeof(double), 1, f));
+    assert(fread(&ang, sizeof(double), 1, f));
     /* seperated so that it doesn't ruin alignment */
-    fread(&elev, sizeof(double), 1, f);
+    assert(fread(&elev, sizeof(double), 1, f));
 
     fclose(f); /* swag */
 
