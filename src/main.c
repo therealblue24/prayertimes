@@ -11,6 +11,8 @@
 #include <assert.h>
 #include "prayertimes.h"
 
+#define VERSION "1.2"
+
 #define _str(x)       x
 #define xstr(x)       _str(#x)
 #define xstrcat(a, b) xstr(a) xstr(b)
@@ -113,10 +115,26 @@ label0:;
     putchar('\n');
 }
 
-void show_help(void)
+void copyright(void)
 {
     printf(
-        "therealblue24's prayer time calculator\nCopyright (C) 2025 therealblue24 (under the MIT license).\n\n");
+        "therealblue24's prayer time calculator\nCopyright (C) 2025 therealblue24 (under the MIT license).\n");
+    return;
+}
+
+void show_version(void)
+{
+    printf("version " VERSION ", " __DATE__ "\n");
+    return;
+}
+
+void show_help(bool version)
+{
+    copyright();
+    if(version) {
+        show_version();
+    }
+    putchar('\n');
     printf("Usage:\n");
     printf("\t-s, --silent\t\t\tonly print times\n");
     printf("\t-f, --show-future-only\t\tshow only future times\n");
@@ -126,6 +144,7 @@ void show_help(void)
     printf("\t--midnight\t\t\tprint midnight\n");
     printf("\t-u, --utc\t\t\tprint times in UTC\n");
     printf("\t-h, --help\t\t\tthis page\n");
+    printf("\t--version\t\t\tprint version of bake\n");
     printf(
         "\t-c, --color\t\t\tcolorize prayer times (requires truecolor support)\n");
     printf("\t--no-fajr\t\t\tdon't print fajr\n");
@@ -155,6 +174,7 @@ int main(int argc, char *argv[])
         bool print_sunset; /* print sunset */
         bool utc; /* use UTC */
         bool help; /* help */
+        bool version; /* version */
         bool no_show[7]; /* dont show certain time */
         times_conf timeconf; /* time configuration */
         bool imsak; /* print imsak */
@@ -208,6 +228,9 @@ int main(int argc, char *argv[])
            strcmp(arg, "--usage") == 0) {
             conf.help = true;
         }
+        if(strcmp(arg, "--version") == 0) {
+            conf.version = true;
+        }
         if(strcmp(arg, "-c") == 0 || strcmp(arg, "--color") == 0) {
             pconf.color = true;
         }
@@ -252,12 +275,16 @@ int main(int argc, char *argv[])
         argc2++;
     }
     if(conf.help) {
-        show_help();
+        show_help(conf.version);
+        return 0;
+    }
+    if(conf.version) {
+        copyright();
+        show_version();
         return 0;
     }
     if(!conf.silent_mode) {
-        printf(
-            "therealblue24's prayer time calculator\nCopyright (C) 2024 therealblue24 (under MIT license).\n");
+        copyright();
         printf("to reconfigure, please run '%s --reconf'\n\n", argv[0]);
     }
 
