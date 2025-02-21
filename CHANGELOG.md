@@ -1,4 +1,4 @@
-# `1.2`
+# `1.4`
 Fixed Asr time calculation
 
 Prayer time adjustment
