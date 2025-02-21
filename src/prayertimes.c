@@ -179,7 +179,8 @@ num angle_T(num a, [[maybe_unused]] num lng, num lat, num dec)
 
 num acot(num x)
 {
-    return -atan(x) + (M_PI / 2);
+    return atan(1 / x);
+    //return -atan(x) + (M_PI / 2);
 }
 
 num dacot(num x)
@@ -190,11 +191,15 @@ num dacot(num x)
 num angle_A(num n, num lat, [[maybe_unused]] num lng, num dec)
 {
     /* ref: http://praytimes.org/calculation */
-    num inner = dtan(lat - dec);
-    num full = dacot(n + inner);
-    num upper = dsin(full) - (dsin(lat) * dsin(dec));
-    num lower = dcos(lat) * dcos(dec);
-    return (1. / 15.) * r2d(acos(upper / lower));
+    /* And also inspired from C++ impl in http://praytimes.org/wiki/Code */
+    /* And also thanks to Wikipedia for making me realize I did
+     * longitude - declination
+     * rather than latitude - declination. 
+     * :facepalm:.                         */
+    num abs_angle = fabs(lat - dec);
+    num tangent = (dtan(abs_angle));
+    num angle = -dacot(n + tangent);
+    return angle_T(angle, lng, lat, dec);
 }
 
 static void print_time_12h_no_sec(const char *l, timelabel t, char **b)
@@ -342,6 +347,8 @@ void print_time(const char *l, timelabel t, print_conf_t pconf, int time)
  * maghrib_minutes: 15 min
  */
 
+enum { FAJR = 0, SUNRISE, DHUHR, ASR, SUNSET, MAGHRIB, ISHA };
+
 void calc_schedule(num lat, num lng, num elev, num Z, time_t time, num *times,
                    times_conf conf)
 {
@@ -367,12 +374,61 @@ void calc_schedule(num lat, num lng, num elev, num Z, time_t time, num *times,
     // Isha is an angle after dhuhr
     num isha = dhuhr + angle_T(conf.isha_angle + evfactor, lng, lat, decl);
 
-    times[0] = fajr;
-    times[1] = sunrise;
-    times[2] = dhuhr;
-    times[3] = asr;
-    times[4] = sunset;
-    times[5] = maghrib;
-    times[6] = isha;
+    times[FAJR] = fajr;
+    times[SUNRISE] = sunrise;
+    times[DHUHR] = dhuhr;
+    times[ASR] = asr;
+    times[SUNSET] = sunset;
+    times[MAGHRIB] = maghrib;
+    times[ISHA] = isha;
+    return;
+}
+
+/* Dhuhr */
+num midday(num jd, num lng, num Z)
+{
+    return 12 - eqt(jd) + (Z - (lng / 15));
+}
+
+/* Adjust times, inspired from C++ impl in http://praytimes.org/wiki/Code */
+void adjust_times(num lat, num lng, num elev, num Z, time_t time, num *times,
+                  times_conf conf)
+{
+    /* suntime -> day percent */
+    for(int i = 0; i < 7; i++) {
+        times[i] = bound_hour(times[i]) / 24;
+    }
+
+    num jd = jdn_now(time);
+    num evfactor = 0.0347 * sqrt(elev); // elevation factor
+    num dhuhr = midday(jd + times[DHUHR], lng, Z);
+
+    num fajr =
+        midday(jd + times[FAJR], lng, Z) -
+        angle_T(conf.fajr_angle + evfactor, lng, lat, dec(jd + times[FAJR]));
+    num isha =
+        midday(jd + times[ISHA], lng, Z) +
+        angle_T(conf.isha_angle + evfactor, lng, lat, dec(jd + times[ISHA]));
+
+    num sunrise =
+        midday(jd + times[SUNRISE], lng, Z) -
+        angle_T((5. / 6.) + evfactor, lng, lat, dec(jd + times[SUNRISE]));
+    num sunset =
+        midday(jd + times[SUNSET], lng, Z) +
+        angle_T((5. / 6.) + evfactor, lng, lat, dec(jd + times[SUNSET]));
+
+    num maghrib = sunset + (conf.maghrib_minutes / 60);
+
+    num asr_shadow = angle_A(conf.asr_angle, lat, lng, dec(jd + times[ASR]));
+    num asr = midday(jd + times[ASR], lng, Z) + asr_shadow;
+
+    times[FAJR] = fajr;
+    times[SUNRISE] = sunrise;
+    times[DHUHR] = dhuhr;
+    times[ASR] = asr;
+    times[SUNSET] = sunset;
+    times[MAGHRIB] = maghrib;
+    times[ISHA] = isha;
+
     return;
 }

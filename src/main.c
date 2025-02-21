@@ -11,7 +11,7 @@
 #include <assert.h>
 #include "prayertimes.h"
 
-#define VERSION "1.2.1"
+#define VERSION "1.4"
 
 #define _str(x)       x
 #define xstr(x)       _str(#x)
@@ -162,6 +162,7 @@ void show_help(bool version)
     printf("\t-ia, --isha-angle\t\tset isha angle\n");
     printf("\t-mm, --maghrib-minutes\t\tset maghrib minutes\n");
     printf("\t-im, --imsak-minutes\t\tset imsak minutes\n");
+    printf("\t--adjust\t\t\tadjust prayer times\n");
 }
 
 int main(int argc, char *argv[])
@@ -180,6 +181,10 @@ int main(int argc, char *argv[])
         bool imsak; /* print imsak */
         bool midnight; /* print midnight */
         double imsak_minutes; /* minutes for imsak */
+        bool angset; /* angle set */
+        bool shia; /* autodetected */
+        bool sunni; /* autodetected */
+        bool adjust; /* adjust prayer times */
     } conf = {
         .silent_mode = false,
         .show_future_only = false,
@@ -194,6 +199,10 @@ int main(int argc, char *argv[])
                      .fajr_angle = 13.5,
                      .isha_angle = 14.5,
                      .maghrib_minutes = 15 },
+        .angset = false,
+        .shia = false,
+        .sunni = false,
+        .adjust = false
     };
 
     int argc2 = 1;
@@ -241,6 +250,7 @@ int main(int argc, char *argv[])
         if(strcmp(arg, "-aa") == 0 || strcmp(arg, "--asr-angle") == 0) {
             double asr_angle = strtod(argv[++argc2], NULL);
             conf.timeconf.asr_angle = asr_angle;
+            conf.angset = true;
         }
         if(strcmp(arg, "-ia") == 0 || strcmp(arg, "--isha-angle") == 0) {
             double isha_angle = strtod(argv[++argc2], NULL);
@@ -259,6 +269,9 @@ int main(int argc, char *argv[])
         if(strcmp(arg, "-im") == 0 || strcmp(arg, "--imsak-minutes") == 0) {
             double imsak_minutes = strtod(argv[++argc2], NULL);
             conf.imsak_minutes = imsak_minutes;
+        }
+        if(strcmp(arg, "--adjust") == 0) {
+            conf.adjust = true;
         }
 #define map(n, l)                             \
     if(strcmp(arg, xstrcat(--no, -n)) == 0) { \
@@ -357,6 +370,19 @@ int main(int argc, char *argv[])
     /* seperated so that it doesn't ruin alignment */
     assert(fread(&elev, sizeof(double), 1, f));
 
+    if(!conf.angset) {
+        conf.timeconf.asr_angle = ang;
+    }
+
+    const double shia_asr_angle = (double)2 / (double)7;
+
+    /* Simple shia/sunni detection */
+    if(conf.timeconf.asr_angle == shia_asr_angle) {
+        conf.shia = true;
+    } else {
+        conf.sunni = true;
+    }
+
     fclose(f); /* swag */
 
     free(rpath);
@@ -393,9 +419,10 @@ int main(int argc, char *argv[])
     }
     double t[7] = { 0 };
 
-    conf.timeconf.asr_angle = ang;
-
     calc_schedule(lat, lng, elev, Z, now, t, conf.timeconf);
+    if(conf.adjust) {
+        adjust_times(lat, lng, elev, Z, now, t, conf.timeconf);
+    }
     double fajr_suntime = t[0];
     double sunrise_suntime = t[1];
     double dhuhr_suntime = t[2];
@@ -405,13 +432,14 @@ int main(int argc, char *argv[])
     double isha_suntime = t[6];
 
     double imsak_suntime = fajr_suntime - (conf.imsak_minutes / 60);
-    double midnight_suntime =
-        bound_hour((sunset_suntime + fajr_suntime + 24) / 2);
-    double calc_error = (fabs(dhuhr_suntime - (midnight_suntime + 12)));
-    double rel_max_error = 30 * calc_error;
+    double midnight_suntime = 0;
 
-    double rel_max_mins = floor(rel_max_error);
-    double rel_max_secs = floor((rel_max_error - rel_max_mins) * 60);
+    if(conf.shia) {
+        midnight_suntime = bound_hour((sunset_suntime + fajr_suntime + 24) / 2);
+    } else if(conf.sunni) {
+        midnight_suntime =
+            bound_hour((sunset_suntime + sunrise_suntime + 24) / 2);
+    }
 
     timelabel fajr = sun2norm(fajr_suntime);
     timelabel sunrise = sun2norm(sunrise_suntime);
@@ -454,8 +482,6 @@ int main(int argc, char *argv[])
     X(print_time("Midnight: ", midnight, pconf, 7),
       now_suntime < midnight_suntime, conf.midnight);
 
-    printf("Relative maximum error: ±%g minutes and %g seconds\n", rel_max_mins,
-           rel_max_secs);
 #undef X
 #undef Y
 }

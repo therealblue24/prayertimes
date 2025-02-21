@@ -5,6 +5,7 @@ Currently there is only a terminal CLI, library coming soon (TM)!
 
 ## Features
 - Calculating the 5 prayer times
+	- And yes, Asr calculation is now fixed.
 - Sunset & sunrise
 - Midnight
 - Imsak
@@ -74,4 +75,5 @@ Usage:
 	-ia, --isha-angle		set isha angle
 	-mm, --maghrib-minutes		set maghrib minutes
 	-im, --imsak-minutes		set imsak minutes
+	--adjust			adjust prayer times
 ```

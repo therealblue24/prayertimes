@@ -34,6 +34,8 @@ typedef struct {
     double asr_angle; /* angle of Asr */
     double fajr_angle, isha_angle; /* angles of Fajr and Isha */
     double maghrib_minutes; /* how much minutes after [sunset] is maghrib */
+    /* adjustment method */
+    enum { MIDDLE_NIGHT = 0, ONE_SEVENTH_NIGHT, ANGLE_BASED } adjust_method;
 } times_conf;
 
 /* calculate a prayer time schedule, given:
@@ -47,6 +49,10 @@ typedef struct {
  */
 void calc_schedule(double lat, double lng, double elev, double Z, time_t time,
                    double *times, times_conf conf);
+
+/* adjust times, same args as calc_schedule */
+void adjust_times(double lat, double lng, double elev, double Z, time_t time,
+                  double *times, times_conf conf);
 
 typedef struct print_conf {
     bool am_pm; /* AM/PM time? */
