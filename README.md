@@ -10,11 +10,14 @@ Currently there is only a terminal CLI, library coming soon (TM)!
 - Midnight
 - Imsak
 - 12 & 24-hour support
-- Customizable fajr, asr, isha angle
-- Customizable maghrib, imsak minutes
+- Customizable fajr, maghrib, isha angle
+- Customizable asr shadow length
+- Customizable maghrib, isha, imsak minutes
 - Can select which times to show and not show
 - Can show seconds
 - Elevation support, increasing accuracy
+- 7 calculation methods
+- Prayer time adjustment, increasing accuracy
 
 ## Startup
 
@@ -70,10 +73,21 @@ Usage:
 	-12h				print times in 12 hour format
 	-24h				print times in 24 hour format
 	--seconds			print seconds along with time
+	-e, --elevation			set elevation
 	-fa, --fajr-angle		set fajr angle
-	-aa, --asr-angle		set custom asr angle
+	-aa, --asr-shadow-length	set custom asr shadow length
 	-ia, --isha-angle		set isha angle
 	-mm, --maghrib-minutes		set maghrib minutes
+	-ma, --maghrib-angle		set maghrib angle
 	-im, --imsak-minutes		set imsak minutes
+	-i,  --isha-minutes		set isha minutes
+	--ramadan			pass this flag if it's Ramadan
 	--adjust			adjust prayer times
+	-mwl, --mwl-method		use MWL method
+	-isna, --isna-method		use ISNA method
+	-egypt, --egypt-method		use Egypt method
+	-makkah, --makkah-method	use Makkah method
+	-karachi, --karachi-method	use Karachi method
+	-tehran, --tehran-method	use Tehran method
+	-jafari, --jafari-method	use Jafari method
 ```

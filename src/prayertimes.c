@@ -76,9 +76,14 @@ num jd_now(time_t now)
 /* julian day number from unix timestamp */
 num jdn_now(time_t now)
 {
-    struct tm *t = gmtime(&now);
-    num jdn_now = calc_jdn(t->tm_year + 1900, t->tm_mon + 1, t->tm_mday);
-    return jdn_now;
+    /* Thanks to Wikipedia (https://en.wikipedia.org/wiki/Julian_day#Variants)
+     * for this clever trick! */
+    long off = mktime(localtime(&now)) - mktime(gmtime(&now));
+    time_t n = now + off;
+    n -= (n % 86400);
+    num jd = (num)n;
+    jd = (n / 86400.) + 2440587.5;
+    return jd;
 }
 
 /* suntime from unix timestamp */
@@ -341,7 +346,7 @@ void print_time(const char *l, timelabel t, print_conf_t pconf, int time)
    conf = configuration */
 
 /* Default conf is:
- * asr_angle: <depends>
+ * asr_shadow_length: <depends>
  * fajr_angle: 13.5^
  * isha_angle: 14.5^
  * maghrib_minutes: 15 min
@@ -361,7 +366,7 @@ void calc_schedule(num lat, num lng, num elev, num Z, time_t time, num *times,
     // Asr is when the shadow of an object is (angle)ths of its length
     // for shia: 2/7
     // for sunni: 1 || 2
-    num asr_shadow = angle_A(conf.asr_angle, lat, lng, decl);
+    num asr_shadow = angle_A(conf.asr_shadow_length, lat, lng, decl);
     num asr = dhuhr + asr_shadow;
     // Fajr is an angle before dhuhr
     num fajr = dhuhr - angle_T(conf.fajr_angle + evfactor, lng, lat, decl);
@@ -369,10 +374,20 @@ void calc_schedule(num lat, num lng, num elev, num Z, time_t time, num *times,
     num sunrise = dhuhr - angle_T((5. / 6.) + evfactor, lng, lat, decl);
     // Sunset is dhuhr added on an angle of 5/6 degrees
     num sunset = dhuhr + angle_T((5. / 6.) + evfactor, lng, lat, decl);
-    // Maghrib is 15 minutes after sunset
+    // Maghrib is either some minutes after sunset or some minutes after an angle
     num maghrib = sunset + (conf.maghrib_minutes / 60);
-    // Isha is an angle after dhuhr
-    num isha = dhuhr + angle_T(conf.isha_angle + evfactor, lng, lat, decl);
+    if(conf.use_maghrib_angle) {
+        maghrib = dhuhr +
+                  angle_T(conf.maghrib_angle + evfactor, lng, lat, decl) +
+                  (conf.maghrib_minutes / 60);
+    }
+    // Isha is an angle after dhuhr + minutes
+    num isha = dhuhr + angle_T(conf.isha_angle + evfactor, lng, lat, decl) +
+               (conf.isha_minutes / 60);
+
+    if(!conf.use_isha_angle) {
+        isha = maghrib + (conf.isha_minutes / 60);
+    }
 
     times[FAJR] = fajr;
     times[SUNRISE] = sunrise;
@@ -394,6 +409,9 @@ num midday(num jd, num lng, num Z)
 void adjust_times(num lat, num lng, num elev, num Z, time_t time, num *times,
                   times_conf conf)
 {
+    /* Fix times to represent true values */
+    times[MAGHRIB] -= (conf.maghrib_minutes / 60);
+    times[ISHA] -= (conf.isha_minutes / 60);
     /* suntime -> day percent */
     for(int i = 0; i < 7; i++) {
         times[i] = bound_hour(times[i]) / 24;
@@ -408,7 +426,8 @@ void adjust_times(num lat, num lng, num elev, num Z, time_t time, num *times,
         angle_T(conf.fajr_angle + evfactor, lng, lat, dec(jd + times[FAJR]));
     num isha =
         midday(jd + times[ISHA], lng, Z) +
-        angle_T(conf.isha_angle + evfactor, lng, lat, dec(jd + times[ISHA]));
+        angle_T(conf.isha_angle + evfactor, lng, lat, dec(jd + times[ISHA])) +
+        (conf.isha_minutes / 60);
 
     num sunrise =
         midday(jd + times[SUNRISE], lng, Z) -
@@ -419,7 +438,19 @@ void adjust_times(num lat, num lng, num elev, num Z, time_t time, num *times,
 
     num maghrib = sunset + (conf.maghrib_minutes / 60);
 
-    num asr_shadow = angle_A(conf.asr_angle, lat, lng, dec(jd + times[ASR]));
+    if(conf.use_maghrib_angle) {
+        maghrib = midday(jd + times[MAGHRIB], lng, Z) +
+                  angle_T(conf.maghrib_angle + evfactor, lng, lat,
+                          dec(jd + times[MAGHRIB])) +
+                  (conf.maghrib_minutes / 60);
+    }
+
+    if(!conf.use_isha_angle) {
+        isha = maghrib + (conf.isha_minutes / 60);
+    }
+
+    num asr_shadow =
+        angle_A(conf.asr_shadow_length, lat, lng, dec(jd + times[ASR]));
     num asr = midday(jd + times[ASR], lng, Z) + asr_shadow;
 
     times[FAJR] = fajr;

@@ -11,7 +11,7 @@
 #include <assert.h>
 #include "prayertimes.h"
 
-#define VERSION "1.4"
+#define VERSION "1.5"
 
 #define _str(x)       x
 #define xstr(x)       _str(#x)
@@ -157,16 +157,29 @@ void show_help(bool version)
     printf("\t-12h\t\t\t\tprint times in 12 hour format\n");
     printf("\t-24h\t\t\t\tprint times in 24 hour format\n");
     printf("\t--seconds\t\t\tprint seconds along with time\n");
+    printf("\t-e, --elevation\t\t\tset elevation\n");
     printf("\t-fa, --fajr-angle\t\tset fajr angle\n");
-    printf("\t-aa, --asr-angle\t\tset custom asr angle\n");
+    printf("\t-aa, --asr-shadow-length\tset custom asr shadow length\n");
     printf("\t-ia, --isha-angle\t\tset isha angle\n");
     printf("\t-mm, --maghrib-minutes\t\tset maghrib minutes\n");
+    printf("\t-ma, --maghrib-angle\t\tset maghrib angle\n");
     printf("\t-im, --imsak-minutes\t\tset imsak minutes\n");
+    printf("\t-i,  --isha-minutes\t\tset isha minutes\n");
+    printf("\t--ramadan\t\t\tpass this flag if it's Ramadan\n");
     printf("\t--adjust\t\t\tadjust prayer times\n");
+    printf("\t-mwl, --mwl-method\t\tuse MWL method\n");
+    printf("\t-isna, --isna-method\t\tuse ISNA method\n");
+    printf("\t-egypt, --egypt-method\t\tuse Egypt method\n");
+    printf("\t-makkah, --makkah-method\tuse Makkah method\n");
+    printf("\t-karachi, --karachi-method\tuse Karachi method\n");
+    printf("\t-tehran, --tehran-method\tuse Tehran method\n");
+    printf("\t-jafari, --jafari-method\tuse Jafari method\n");
 }
 
 int main(int argc, char *argv[])
 {
+    bool midnight_using_fajr = false;
+    int ramadan = 0;
     print_conf_t pconf = { .am_pm = true, .seconds = false, .color = false };
     struct {
         bool silent_mode; /* only print times */
@@ -181,6 +194,8 @@ int main(int argc, char *argv[])
         bool imsak; /* print imsak */
         bool midnight; /* print midnight */
         double imsak_minutes; /* minutes for imsak */
+        double elevation; /* elevation */
+        bool elevset; /* elevation set */
         bool angset; /* angle set */
         bool shia; /* autodetected */
         bool sunni; /* autodetected */
@@ -195,15 +210,27 @@ int main(int argc, char *argv[])
         .midnight = false,
         .imsak = false,
         .imsak_minutes = 15.0,
-        .timeconf = { .asr_angle = 0,
+        .timeconf = { .asr_shadow_length = 0,
                      .fajr_angle = 13.5,
                      .isha_angle = 14.5,
-                     .maghrib_minutes = 15 },
+                     .maghrib_minutes = 15,
+                     .isha_minutes = 0,
+                     .maghrib_angle = 0,
+                     .use_maghrib_angle = false,
+                     .use_isha_angle = true },
         .angset = false,
         .shia = false,
         .sunni = false,
-        .adjust = false
+        .adjust = false,
+        .elevation = 0,
+        .elevset = false
     };
+
+    for(int i = 1; i < argc; i++) {
+        if(strcmp(argv[i], "--ramadan") == 0) {
+            ramadan = 1;
+        }
+    }
 
     int argc2 = 1;
     while(argc2 < argc) {
@@ -247,9 +274,9 @@ int main(int argc, char *argv[])
             double fajr_angle = strtod(argv[++argc2], NULL);
             conf.timeconf.fajr_angle = fajr_angle;
         }
-        if(strcmp(arg, "-aa") == 0 || strcmp(arg, "--asr-angle") == 0) {
+        if(strcmp(arg, "-aa") == 0 || strcmp(arg, "--asr-shadow-length") == 0) {
             double asr_angle = strtod(argv[++argc2], NULL);
-            conf.timeconf.asr_angle = asr_angle;
+            conf.timeconf.asr_shadow_length = asr_angle;
             conf.angset = true;
         }
         if(strcmp(arg, "-ia") == 0 || strcmp(arg, "--isha-angle") == 0) {
@@ -259,6 +286,15 @@ int main(int argc, char *argv[])
         if(strcmp(arg, "-mm") == 0 || strcmp(arg, "--maghrib-minutes") == 0) {
             double maghrib_minutes = strtod(argv[++argc2], NULL);
             conf.timeconf.maghrib_minutes = maghrib_minutes;
+        }
+        if(strcmp(arg, "-i") == 0 || strcmp(arg, "--isha-minutes") == 0) {
+            double isha_minutes = strtod(argv[++argc2], NULL);
+            conf.timeconf.isha_minutes = isha_minutes;
+        }
+        if(strcmp(arg, "-ma") == 0 || strcmp(arg, "--maghrib-angle") == 0) {
+            double maghrib_angle = strtod(argv[++argc2], NULL);
+            conf.timeconf.maghrib_angle = maghrib_angle;
+            conf.timeconf.use_maghrib_angle = true;
         }
         if(strcmp(arg, "--imsak") == 0) {
             conf.imsak = true;
@@ -273,6 +309,78 @@ int main(int argc, char *argv[])
         if(strcmp(arg, "--adjust") == 0) {
             conf.adjust = true;
         }
+        if(strcmp(arg, "-e") == 0 || strcmp(arg, "--elevation") == 0) {
+            conf.elevset = true;
+            double elev = strtod(argv[++argc2], NULL);
+            conf.elevation = elev;
+        }
+
+        /* clang-format off */
+#define methodchk(name)                      \
+    if(strcmp(arg, xstrcat(-, name)) == 0 || \
+       strcmp(arg, xstrcat(--, name-method)) == 0)
+        /* clang-format on */
+#define tc conf.timeconf
+
+        /* Methods refrenced from this page: http://praytimes.org/wiki/Calculation_Methods */
+
+        methodchk(mwl)
+        {
+            tc.fajr_angle = 18;
+            tc.isha_angle = 17;
+            tc.maghrib_minutes = 0;
+        }
+
+        methodchk(isna)
+        {
+            tc.fajr_angle = 15;
+            tc.isha_angle = 15;
+            tc.maghrib_minutes = 0;
+        }
+
+        methodchk(egypt)
+        {
+            tc.fajr_angle = 19.5;
+            tc.isha_angle = 17.5;
+            tc.maghrib_minutes = 0;
+        }
+
+        methodchk(makkah)
+        {
+            tc.fajr_angle = 18.5;
+            tc.use_isha_angle = false;
+            tc.isha_minutes = 90 + (30 * ramadan);
+        }
+
+        methodchk(karachi)
+        {
+            tc.fajr_angle = 18;
+            tc.isha_angle = 18;
+            tc.maghrib_minutes = 0;
+        }
+
+        methodchk(tehran)
+        {
+            tc.fajr_angle = 17.7;
+            tc.isha_angle = 14;
+            tc.use_maghrib_angle = true;
+            tc.maghrib_angle = 4.5;
+            tc.maghrib_minutes = 0;
+            midnight_using_fajr = true;
+        }
+
+        methodchk(jafari)
+        {
+            tc.fajr_angle = 16;
+            tc.isha_angle = 14;
+            tc.use_maghrib_angle = true;
+            tc.maghrib_angle = 4;
+            tc.maghrib_minutes = 0;
+            midnight_using_fajr = true;
+        }
+
+#undef methodchk
+#undef tc
 #define map(n, l)                             \
     if(strcmp(arg, xstrcat(--no, -n)) == 0) { \
         conf.no_show[l] = true;               \
@@ -371,14 +479,18 @@ int main(int argc, char *argv[])
     assert(fread(&elev, sizeof(double), 1, f));
 
     if(!conf.angset) {
-        conf.timeconf.asr_angle = ang;
+        conf.timeconf.asr_shadow_length = ang;
+    }
+    if(conf.elevset) {
+        elev = conf.elevation;
     }
 
-    const double shia_asr_angle = (double)2 / (double)7;
+    const double shia_asr_shadow_length = (double)2 / (double)7;
 
     /* Simple shia/sunni detection */
-    if(conf.timeconf.asr_angle == shia_asr_angle) {
+    if(conf.timeconf.asr_shadow_length == shia_asr_shadow_length) {
         conf.shia = true;
+        midnight_using_fajr = true;
     } else {
         conf.sunni = true;
     }
@@ -434,11 +546,12 @@ int main(int argc, char *argv[])
     double imsak_suntime = fajr_suntime - (conf.imsak_minutes / 60);
     double midnight_suntime = 0;
 
-    if(conf.shia) {
-        midnight_suntime = bound_hour((sunset_suntime + fajr_suntime + 24) / 2);
-    } else if(conf.sunni) {
-        midnight_suntime =
-            bound_hour((sunset_suntime + sunrise_suntime + 24) / 2);
+    if(conf.shia || midnight_using_fajr) {
+        double span = bound_hour(fajr_suntime - sunset_suntime);
+        midnight_suntime = sunset_suntime + (span / 2);
+    } else if(conf.sunni || !midnight_using_fajr) {
+        double span = bound_hour(sunrise_suntime - sunset_suntime);
+        midnight_suntime = sunset_suntime + (span / 2);
     }
 
     timelabel fajr = sun2norm(fajr_suntime);

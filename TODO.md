@@ -10,6 +10,7 @@
 - [ ] Full customization
 - [x] Prayer time adjustment
 - [ ] High latitude prayer time adjustment
+- [x] Calculation Methods
 
 ## Nice to haves
 - [ ] GUI version

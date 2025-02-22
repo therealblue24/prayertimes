@@ -31,9 +31,15 @@ double angle_A(double n, double lng, double lat, double dec);
 double bound_hour(double hr);
 
 typedef struct {
-    double asr_angle; /* angle of Asr */
+    double asr_shadow_length; /* shadow length of Asr */
     double fajr_angle, isha_angle; /* angles of Fajr and Isha */
-    double maghrib_minutes; /* how much minutes after [sunset] is maghrib */
+    double
+        maghrib_minutes; /* how much minutes after [sunset/calculated maghrib] is maghrib */
+    double isha_minutes; /* how much minutes after [calculated isha] is isha */
+    double maghrib_angle; /* maghrib angle */
+    bool use_maghrib_angle; /* use maghrib angle */
+    bool use_isha_angle; /* use isha angle */
+
     /* adjustment method */
     enum { MIDDLE_NIGHT = 0, ONE_SEVENTH_NIGHT, ANGLE_BASED } adjust_method;
 } times_conf;
