@@ -1,3 +1,14 @@
+# `2.0-beta1`
+Breaks backwards compatibility
+
+Readable config support.
+
+Heavily untested.
+
+Heavily undocumented.
+
+> Use with caution.
+
 # `1.5`
 Fixed Julian day calculation
 

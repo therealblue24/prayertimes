@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -std=c23 -O0 -g -Wall -Wextra -Werror
+CFLAGS = -std=c23 -O0 -g -Wall -Wextra
 LDFLAGS = -lm
 SRC = $(wildcard src/**/*.c) $(wildcard src/*.c) $(wildcard src/**/**/*.c) $(wildcard src/**/**/**/*.c)
 OBJ = $(SRC:.c=.o)

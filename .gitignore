@@ -6,5 +6,8 @@ bin
 *.bkp
 insert_funny_joke_here
 tst.*
+testing
 out.txt
 hijricalendar
+.cache
+compile_commands.json
