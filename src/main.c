@@ -357,7 +357,7 @@ static const struct conf default_conf = {
 int main(int argc, char *argv[])
 {
     bool midnight_using_fajr = false;
-    bool emit_file = false;
+    bool emit_file = 0;
     config_t *cfg = config_init();
     assert(cfg);
 
@@ -383,12 +383,12 @@ int main(int argc, char *argv[])
             conf.reconf = true;
         }
         if(strcmp(argv[i], "--rewrite") == 0) {
-            emit_file = true;
+            emit_file = 1;
         }
     }
 
     if(conf.reconf) {
-        emit_file = true;
+        emit_file = 1;
     }
 
     char *home = getenv("HOME");
@@ -454,6 +454,10 @@ int main(int argc, char *argv[])
         printf("Configuring for first use\n");
         init_conf(cfg, rpath);
         configured = true;
+        /* I have no idea why emit_file = true; sets it to false. */
+        /* Instead, emit_file = 1; works... inshallah this never
+         * breaks. */
+        emit_file = 1;
     }
 
     if(!old_config_not_found) {
@@ -488,7 +492,7 @@ int main(int argc, char *argv[])
         conf.lat = lat;
         conf.lng = lng;
 
-        emit_file = true;
+        emit_file = 1;
 
         remove_chk(rpath);
         old_config_not_found = true;
@@ -499,11 +503,11 @@ int main(int argc, char *argv[])
     time_t now = time(NULL);
     double now_suntime = suntime_now(now);
 
-    if(!set_to_default) {
+    if(!set_to_default && !new_config_not_found) {
         assert(config_load(cfg, cpath) == 0);
         reinterperet_config_values(cfg);
-        load_config_values(cfg, &pconf, &conf);
     }
+    load_config_values(cfg, &pconf, &conf);
 
     int argc2 = 1;
     while(argc2 < argc) {
