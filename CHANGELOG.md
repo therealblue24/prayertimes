@@ -1,3 +1,8 @@
+# `2.0-beta3`
+Comments in config where horrible mistake
+
+Migration from old config system to New (TM) config system
+
 # `2.0-beta2`
 Fixes by far the most stupid bug I have ever made
 

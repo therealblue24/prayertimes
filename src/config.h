@@ -8,11 +8,15 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#define STRING 0
+#define NUM    1
+#define INT    2
+#define BOOL   3
+
 /* A config value */
 typedef struct config_val {
-    char *comment; /* For emitting a value */
     char *name;
-    enum { STRING = 0, NUM, INT, BOOL } value_type;
+    int value_type;
     union {
         char *value_str;
         double value_num;
@@ -44,6 +48,7 @@ void config_free(config_t *cfg);
 void config_val_free(config_val_t val);
 
 int config_append_val(config_t *cfg, config_val_t val);
+int config_append_val_overwrite(config_t *cfg, config_val_t val);
 
 int config_append_str(config_t *cfg, char *name, char *val);
 int config_append_num(config_t *cfg, char *name, double val);
@@ -53,8 +58,6 @@ int config_append_bool(config_t *cfg, char *name, bool val);
 
 int config_delete_val(config_t *cfg, char *name);
 int config_emit(config_t *cfg, FILE *out);
-
-void config_set_comment(config_t *cfg, char *name, char *comment);
 
 optsize_t config_get_val_loc(config_t *cfg, char *name);
 config_val_t config_get_val(config_t *cfg, char *name);

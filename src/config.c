@@ -13,7 +13,6 @@ void config_val_free(config_val_t val)
     if(val.value_type == STRING) {
         free(val.value_str);
     }
-    free(val.comment);
     return;
 }
 
@@ -54,9 +53,17 @@ int config_append_val(config_t *cfg, config_val_t val)
         return 1;
     }
 
-    /* Try to find an unused slot */
     bool found = false;
     size_t l;
+
+    optsize_t l_ = config_get_val_loc(cfg, val.name);
+    if(l_.has_value) {
+        found = true;
+        l = l_.val;
+        goto out;
+    }
+    /* Try to find an unused slot */
+
     for(l = 0; l < cfg->size; l++) {
         if(cfg->vals[l].ignore) {
             found = true;
@@ -132,6 +139,15 @@ int config_reinterperet_val(config_t *cfg, char *name, int newtype)
     if(val.notexist) {
         return 1;
     }
+    if(val.value_type == newtype) {
+        return 0;
+    }
+
+    if(val.value_type != STRING) {
+        fprintf(stderr, "TODO: Non-string value reinterperation\n");
+        exit(EXIT_FAILURE);
+    }
+
     char *str = strndup(val.value_str, 512);
     if(newtype != STRING) {
         free(val.value_str);
@@ -166,9 +182,6 @@ int config_emit(config_t *cfg, FILE *out)
     static const char *bool_to_string[] = { "false", "true", NULL };
     for(size_t i = 0; i < cfg->size; i++) {
         config_val_t v = cfg->vals[i];
-        if(v.comment) {
-            fprintf(out, "# %s\n", v.comment);
-        }
         fprintf(out, "%s: ", v.name);
         switch(v.value_type) {
         case STRING:
@@ -266,6 +279,11 @@ int config_load(config_t *cfg, const char *filename)
             continue;
         }
         if(c == '#') {
+            printf(
+                "please don't use comments in the config it screws everything up\n");
+            printf("solution coming soon (TM)\n");
+            exit(EXIT_FAILURE);
+
             while(i < size && c != '\n') {
                 c = fgetc(f);
                 i++;
@@ -367,18 +385,4 @@ bool config_getbool(config_t *cfg, char *name, bool default_)
         return default_;
     }
     return v.value_bool;
-}
-
-void config_set_comment(config_t *cfg, char *name, char *comment)
-{
-    optsize_t loc = config_get_val_loc(cfg, name);
-    if(!loc.has_value) {
-        return;
-    }
-
-    config_val_t v = cfg->vals[loc.val];
-    v.comment = comment;
-
-    cfg->vals[loc.val] = v;
-    return;
 }
