@@ -15,7 +15,6 @@
 
 /* A config value */
 typedef struct config_val {
-    char *comment; /* For emitting a value */
     char *name;
     int value_type;
     union {
@@ -59,8 +58,6 @@ int config_append_bool(config_t *cfg, char *name, bool val);
 
 int config_delete_val(config_t *cfg, char *name);
 int config_emit(config_t *cfg, FILE *out);
-
-void config_set_comment(config_t *cfg, char *name, char *comment);
 
 optsize_t config_get_val_loc(config_t *cfg, char *name);
 config_val_t config_get_val(config_t *cfg, char *name);
