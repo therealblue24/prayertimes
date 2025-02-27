@@ -34,8 +34,9 @@ struct conf {
     bool midnight; /* print midnight */
     double imsak_minutes; /* minutes for imsak */
     double elevation; /* elevation */
-    bool elevset; /* elevation set */
-    bool angset; /* angle set */
+    /* latitude & longitude */
+    double lat;
+    double lng;
     bool shia; /* autodetected */
     bool sunni; /* autodetected */
     bool adjust; /* adjust prayer times */
@@ -65,6 +66,19 @@ static const char *months[] = { "January",   "Feburary", "March",    "April",
 static const char *weekdays[] = { "Sunday",   "Monday", "Tuesday",  "Wednesday",
                                   "Thursday", "Friday", "Saturday", NULL };
 
+void remove_chk(char *path)
+{
+    if(remove(path) == -1) {
+        fprintf(stderr, "ERROR: Failed to delete %s: %s\n", path,
+                strerror(errno));
+        exit(EXIT_FAILURE);
+
+        printf("Hello.\n");
+        return;
+    }
+    return;
+}
+
 void zfgets(char *buf, int size, FILE *f)
 {
     memset(buf, 0, size);
@@ -81,7 +95,7 @@ void zfgets(char *buf, int size, FILE *f)
     return;
 }
 
-void init_conf(char *path)
+void init_conf(config_t *cfg, [[maybe_unused]] char *path)
 {
     char b[512] = { 0 };
     double lat = 0, lng = 0, elev = 0, ang = 0;
@@ -119,25 +133,28 @@ label0:;
         printf("Please enter 'Shia' or 'Sunni'.\n");
         exit(EXIT_FAILURE);
     }
-    printf("Ok, writing binary config file... \n");
+    printf("Ok, preparing config file... \n");
 
-    FILE *f = fopen(path, "wb");
-    if(!f) {
-        fprintf(stderr, "ERROR: Failed to open config file: %s\n",
-                strerror(errno));
-        exit(EXIT_FAILURE);
-    }
-    /* who cares you are not spreading this config file */
-    assert(fwrite(&lng, sizeof(double), 1, f));
-    assert(fwrite(&lat, sizeof(double), 1, f));
-    assert(fwrite(&ang, sizeof(double), 1, f));
-    /* seperated so that it doesn't ruin alignment */
-    assert(fwrite(&elev, sizeof(double), 1, f));
+#define N(x, y)                                               \
+    config_append_val(cfg, (config_val_t){ .name = x,         \
+                                           .value_type = NUM, \
+                                           .value_num = y,    \
+                                           .ignore = false })
 
-    assert(fflush(f) == 0);
+    N("latitude", lat);
+    N("longitude", lng);
+    N("elevation", elev);
+    N("asr_shadow_length", ang);
 
-    fclose(f); /* swag */
+    /* elevation & asr shadow length are set elsewhere */
+    config_set_comment(cfg, "latitude",
+                       "Your latitude as a decimal coordinate");
+    config_set_comment(cfg, "longitude",
+                       "Your longitude as a decimal coordinate");
+
     putchar('\n');
+
+#undef N
 }
 
 void copyright(void)
@@ -220,6 +237,8 @@ void reinterperet_config_values(config_t *cfg)
 
     N(imsak_minutes);
     N(elevation);
+    N(latitude);
+    N(longitude);
 
     N(asr_shadow_length);
     N(fajr_angle);
@@ -270,6 +289,8 @@ void load_config_values(config_t *cfg, print_conf_t *pc, struct conf *c)
 
     N(c->imsak_minutes, "imsak_minutes", 15.0);
     N(c->elevation, "elevation", 0.0);
+    N(c->lat, "latitude", 0);
+    N(c->lng, "longitude", 0);
 
     N(tc.asr_shadow_length, "asr_shadow_length", 0);
     N(tc.fajr_angle, "fajr_angle", 13.5);
@@ -331,12 +352,10 @@ static const struct conf default_conf = {
                  .maghrib_angle = 0,
                  .use_maghrib_angle = false,
                  .use_isha_angle = true },
-    .angset = false,
     .shia = false,
     .sunni = false,
     .adjust = false,
     .elevation = 0,
-    .elevset = false,
     .method = 0,
 };
 
@@ -415,56 +434,83 @@ int main(int argc, char *argv[])
         }
     }
 
-    if(access(rpath, F_OK) == -1) {
-        if(errno == ENOENT) {
-            printf("Configuring for first use\n");
-            if(!configured)
-                init_conf(rpath);
-            configured = true;
-        } else {
-            fprintf(stderr, "ERROR: unable to access %s: %s\n", rpath,
-                    strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-    }
+    bool old_config_not_found = access(rpath, F_OK) == -1;
 
-    bool conf_ok_load = false;
-
-    if(access(cpath, F_OK) == -1) {
-        if(errno == ENOENT) {
-            printf("Migrating config\n");
-            emit_file = true;
-        } else {
-            fprintf(stderr, "ERROR: unable to access %s: %s\n", cpath,
-                    strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        conf_ok_load = !emit_file;
-    }
-
-    double lat, lng, elev, ang = 0;
-    time_t now = time(NULL);
-    double now_suntime = suntime_now(now);
-
-    FILE *f = fopen(rpath, "rb");
-    if(!f) {
-        fprintf(stderr, "ERROR: Failed to open configuration file: %s\n",
+    if(old_config_not_found && errno != ENOENT) {
+        fprintf(stderr, "ERROR: unable to access %s: %s\n", rpath,
                 strerror(errno));
         exit(EXIT_FAILURE);
     }
-    assert(fread(&lng, sizeof(double), 1, f));
-    assert(fread(&lat, sizeof(double), 1, f));
-    assert(fread(&ang, sizeof(double), 1, f));
-    /* seperated so that it doesn't ruin alignment */
-    assert(fread(&elev, sizeof(double), 1, f));
-    fclose(f);
 
-    if(!conf.angset) {
-        conf.timeconf.asr_shadow_length = ang;
+    bool new_config_not_found = access(cpath, F_OK) == -1;
+
+    if(new_config_not_found && errno != ENOENT) {
+        fprintf(stderr, "ERROR: unable to access %s: %s\n", cpath,
+                strerror(errno));
+        exit(EXIT_FAILURE);
     }
 
-    if(conf_ok_load && !set_to_default) {
+    if(!configured && conf.reconf) {
+        init_conf(cfg, rpath);
+        configured = true;
+    }
+
+    if(new_config_not_found && !configured && old_config_not_found) {
+        printf("Configuring for first use\n");
+        init_conf(cfg, rpath);
+        configured = true;
+    }
+
+    if(!old_config_not_found) {
+        double lat, lng, elev, ang = 0;
+        printf("Migrating config... ");
+        FILE *f = fopen(rpath, "rb");
+        if(!f) {
+            fprintf(stderr, "\nERROR: Failed to open configuration file: %s\n",
+                    strerror(errno));
+            exit(EXIT_FAILURE);
+        }
+        assert(fread(&lng, sizeof(double), 1, f));
+        assert(fread(&lat, sizeof(double), 1, f));
+        assert(fread(&ang, sizeof(double), 1, f));
+        /* seperated so that it doesn't ruin alignment */
+        assert(fread(&elev, sizeof(double), 1, f));
+        fclose(f);
+
+#define N(x, y)                                               \
+    config_append_val(cfg, (config_val_t){ .name = x,         \
+                                           .value_type = NUM, \
+                                           .value_num = y,    \
+                                           .ignore = false })
+
+        N("latitude", lat);
+        N("longitude", lng);
+        N("elevation", elev);
+        N("asr_shadow_length", ang);
+
+        /* elevation & asr shadow length are set elsewhere */
+        config_set_comment(cfg, "latitude",
+                           "Your latitude as a decimal coordinate");
+        config_set_comment(cfg, "longitude",
+                           "Your longitude as a decimal coordinate");
+
+        conf.timeconf.asr_shadow_length = ang;
+        conf.elevation = elev;
+        conf.lat = lat;
+        conf.lng = lng;
+
+        emit_file = true;
+
+        remove_chk(rpath);
+        old_config_not_found = true;
+        printf("done\n");
+#undef N
+    }
+
+    time_t now = time(NULL);
+    double now_suntime = suntime_now(now);
+
+    if(!set_to_default) {
         assert(config_load(cfg, cpath) == 0);
         reinterperet_config_values(cfg);
         load_config_values(cfg, &pconf, &conf);
@@ -512,7 +558,6 @@ int main(int argc, char *argv[])
         if(strcmp(arg, "-aa") == 0 || strcmp(arg, "--asr-shadow-length") == 0) {
             double asr_angle = strtod(argv[++argc2], NULL);
             conf.timeconf.asr_shadow_length = asr_angle;
-            conf.angset = true;
         }
         if(strcmp(arg, "-ia") == 0 || strcmp(arg, "--isha-angle") == 0) {
             double isha_angle = strtod(argv[++argc2], NULL);
@@ -545,7 +590,6 @@ int main(int argc, char *argv[])
             conf.adjust = true;
         }
         if(strcmp(arg, "-e") == 0 || strcmp(arg, "--elevation") == 0) {
-            conf.elevset = true;
             double elev = strtod(argv[++argc2], NULL);
             conf.elevation = elev;
         }
@@ -651,16 +695,6 @@ int main(int argc, char *argv[])
     if(!conf.silent_mode) {
         copyright();
         printf("to reconfigure, please run '%s --reconf'\n\n", argv[0]);
-    }
-
-    if(!configured && conf.reconf) {
-        init_conf(rpath);
-        configured = true;
-    }
-    if(conf.elevset) {
-        elev = conf.elevation;
-    } else {
-        conf.elevation = elev;
     }
 
 #define methodchk(x, y) if(y == conf.method)
@@ -776,9 +810,10 @@ int main(int argc, char *argv[])
     }
     double t[7] = { 0 };
 
-    calc_schedule(lat, lng, elev, Z, now, t, conf.timeconf);
+    calc_schedule(conf.lat, conf.lng, conf.elevation, Z, now, t, conf.timeconf);
     if(conf.adjust) {
-        adjust_times(lat, lng, elev, Z, now, t, conf.timeconf);
+        adjust_times(conf.lat, conf.lng, conf.elevation, Z, now, t,
+                     conf.timeconf);
     }
     double fajr_suntime = t[0];
     double sunrise_suntime = t[1];
@@ -866,6 +901,13 @@ int main(int argc, char *argv[])
 
         config_append_num(cfg, strlit("imsak_minutes"), c.imsak_minutes);
         config_append_num(cfg, strlit("elevation"), c.elevation);
+        config_append_num(cfg, strlit("latitude"), c.lat);
+        config_append_num(cfg, strlit("longitude"), c.lng);
+
+        config_set_comment(cfg, "latitude",
+                           "Your latitude as a decimal coordinate");
+        config_set_comment(cfg, "longitude",
+                           "Your longitude as a decimal coordinate");
 
         X("imsak_minutes", "How many minutes to delay Imsak");
         X("elevation", "Elevation, in meters, above sea level");

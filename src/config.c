@@ -54,9 +54,17 @@ int config_append_val(config_t *cfg, config_val_t val)
         return 1;
     }
 
-    /* Try to find an unused slot */
     bool found = false;
     size_t l;
+
+    optsize_t l_ = config_get_val_loc(cfg, val.name);
+    if(l_.has_value) {
+        found = true;
+        l = l_.val;
+        goto out;
+    }
+    /* Try to find an unused slot */
+
     for(l = 0; l < cfg->size; l++) {
         if(cfg->vals[l].ignore) {
             found = true;
@@ -132,6 +140,15 @@ int config_reinterperet_val(config_t *cfg, char *name, int newtype)
     if(val.notexist) {
         return 1;
     }
+    if(val.value_type == newtype) {
+        return 0;
+    }
+
+    if(val.value_type != STRING) {
+        fprintf(stderr, "TODO: Non-string value reinterperation\n");
+        exit(EXIT_FAILURE);
+    }
+
     char *str = strndup(val.value_str, 512);
     if(newtype != STRING) {
         free(val.value_str);
@@ -377,6 +394,9 @@ void config_set_comment(config_t *cfg, char *name, char *comment)
     }
 
     config_val_t v = cfg->vals[loc.val];
+    if(v.comment) {
+        free(v.comment);
+    }
     v.comment = comment;
 
     cfg->vals[loc.val] = v;
