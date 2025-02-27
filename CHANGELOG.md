@@ -3,6 +3,8 @@ Comments in config where horrible mistake
 
 Migration from old config system to New (TM) config system
 
+> NOTE: The migration from the old to new config system will be removed in the eventual update 3.0
+
 # `2.0-beta2`
 Fixes by far the most stupid bug I have ever made
 
