@@ -1,3 +1,10 @@
+# `2.0-beta2`
+Fixes by far the most stupid bug I have ever made
+
+Remove some leftover debug stuff
+
+Comments in config!
+
 # `2.0-beta1`
 Breaks backwards compatibility
 

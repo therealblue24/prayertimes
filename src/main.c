@@ -14,7 +14,7 @@
 
 #define strlit(x) strndup(x, strlen(x) + 1)
 
-#define VERSION "2.0-beta1"
+#define VERSION "2.0-beta2"
 
 #define _str(x)       x
 #define xstr(x)       _str(#x)
@@ -111,7 +111,7 @@ label0:;
         printf("Shafi'i (1) or Hanafi (2) ?: ");
         zfgets(b, sizeof(b), stdin);
         ang = strtod(b, NULL);
-        if(ang != 1 || ang != 2) {
+        if(ang != 1 && ang != 2) {
             /* the legend of sisyphus */
             goto label0;
         }
@@ -367,6 +367,9 @@ int main(int argc, char *argv[])
         }
         if(strcmp(argv[i], "--reconf") == 0 || strcmp(argv[i], "-rc") == 0) {
             conf.reconf = true;
+        }
+        if(strcmp(argv[i], "--rewrite") == 0) {
+            emit_file = true;
         }
     }
 
@@ -840,9 +843,10 @@ int main(int argc, char *argv[])
 #undef X
 #undef Y
     if(emit_file) {
-#define c    conf
-#define tc   conf.timeconf
-#define S(x) (conf.no_show[x])
+#define c       conf
+#define tc      conf.timeconf
+#define S(x)    (conf.no_show[x])
+#define X(n, c) config_set_comment(cfg, n, strlit(c))
 
         config_append_bool(cfg, strlit("silent_mode"), c.silent_mode);
         config_append_bool(cfg, strlit("show_future_only"), c.show_future_only);
@@ -852,8 +856,19 @@ int main(int argc, char *argv[])
         config_append_bool(cfg, strlit("show_midnight"), c.midnight);
         config_append_bool(cfg, strlit("adjust"), c.adjust);
 
+        X("silent_mode", "Only print times");
+        X("show_future_only", "Show only future times");
+        X("show_sunset", "Show Sunset time");
+        X("utc", "Print times in UTC");
+        X("show_imsak", "Show Imsak time");
+        X("show_midnight", "Show Midnight time");
+        X("adjust", "Adjust prayer times");
+
         config_append_num(cfg, strlit("imsak_minutes"), c.imsak_minutes);
         config_append_num(cfg, strlit("elevation"), c.elevation);
+
+        X("imsak_minutes", "How many minutes to delay Imsak");
+        X("elevation", "Elevation, in meters, above sea level");
 
         config_append_num(cfg, strlit("asr_shadow_length"),
                           tc.asr_shadow_length);
@@ -863,10 +878,22 @@ int main(int argc, char *argv[])
         config_append_num(cfg, strlit("isha_minutes"), tc.isha_minutes);
         config_append_num(cfg, strlit("maghrib_angle"), tc.maghrib_angle);
 
+        X("asr_shadow_length",
+          "What the length of a shadow is (plus it's length at Dhuhr) for Asr");
+        X("fajr_angle", "Angle of which Fajr will be calculated");
+        X("isha_angle", "Angle of which Isha will be calculated");
+        X("maghrib_minutes", "How many minutes to delay Maghrib");
+        X("isha_minutes", "How many minutes to delay Isha");
+        X("maghrib_angle", "Angle of which Maghrib will be calculated");
+
         config_append_bool(cfg, strlit("use_maghrib_angle"),
                            tc.use_maghrib_angle);
         config_append_bool(cfg, strlit("use_isha_angle"), tc.use_isha_angle);
 
+        X("use_maghrib_angle", "Use an angle to calculate Maghrib or not");
+        X("use_isha_angle", "Use an angle to calculate Isha or not");
+
+        /* I think these are self explanatory */
         config_append_bool(cfg, strlit("no_show_fajr"), S(0));
         config_append_bool(cfg, strlit("no_show_sunrise"), S(1));
         config_append_bool(cfg, strlit("no_show_dhuhr"), S(2));
@@ -876,9 +903,16 @@ int main(int argc, char *argv[])
 
         config_append_str(cfg, strlit("method"), strdup(methods[c.method]));
 
+        X("method",
+          "Which method to use to calculate prayer times (enter none to customize manually)");
+
         config_append_bool(cfg, strlit("12_hour_time"), pconf.am_pm);
         config_append_bool(cfg, strlit("show_seconds"), pconf.seconds);
         config_append_bool(cfg, strlit("color"), pconf.color);
+
+        X("12_hour_time", "Use 12 hour time or not");
+        X("show_seconds", "Show seconds in the prayer times");
+        X("color", "c o l o r ize the prayer times or not");
 
         FILE *emit_to = fopen(cpath, "w");
         assert(emit_to);
@@ -886,6 +920,7 @@ int main(int argc, char *argv[])
         config_emit(cfg, emit_to);
         fclose(emit_to);
     }
+#undef X
 #undef c
 #undef tc
 #undef S
