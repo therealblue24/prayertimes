@@ -1,3 +1,8 @@
+# `2.0-beta4`
+Fixed DST bug
+
+Shenatigans
+
 # `2.0-beta3`
 Comments in config where horrible mistake
 

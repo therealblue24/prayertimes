@@ -323,13 +323,14 @@ int config_load(config_t *cfg, const char *filename)
                 i++;
             } while(i < size && c != '\n');
             v.name = strndup(name, 100);
-            v.value_str = str;
+            v.value_str = strndup(str, 512);
             v.ignore = false;
             v.value_type = STRING;
             config_append_val(cfg, v);
             name_l = 0;
             memset(name, 0, 100);
             did_something = true;
+            free(str);
             continue;
         }
 

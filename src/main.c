@@ -122,7 +122,7 @@ void init_conf(config_t *cfg, [[maybe_unused]] char *path)
         ang = 2. / 7.;
     } else if(strcmp(b, "sunni") == 0) {
 label0:;
-        printf("Shafi'i (1) or Hanafi (2) ?: ");
+        printf("Shafi'i (1) or Hanafi (2)?\n");
         zfgets(b, sizeof(b), stdin);
         ang = strtod(b, NULL);
         if(ang != 1 && ang != 2) {
@@ -133,13 +133,15 @@ label0:;
         printf("Please enter 'Shia' or 'Sunni'.\n");
         exit(EXIT_FAILURE);
     }
-    printf("Ok, preparing config file... \n");
 
 #define N(x, y)                                               \
     config_append_val(cfg, (config_val_t){ .name = x,         \
                                            .value_type = NUM, \
                                            .value_num = y,    \
                                            .ignore = false })
+    goto end;
+end:;
+    printf("Ok, preparing config file... \n");
 
     N("latitude", lat);
     N("longitude", lng);
@@ -369,12 +371,14 @@ int main(int argc, char *argv[])
     struct conf conf = default_conf;
     bool set_to_default = false;
 
+    /* Mega Priority flags */
     for(int i = 1; i < argc; i++) {
         if(strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--default") == 0) {
             set_to_default = true;
         }
     }
 
+    /* Priority flags */
     for(int i = 1; i < argc; i++) {
         if(strcmp(argv[i], "--ramadan") == 0) {
             ramadan = 1;
@@ -507,85 +511,104 @@ int main(int argc, char *argv[])
         assert(config_load(cfg, cpath) == 0);
         reinterperet_config_values(cfg);
     }
+
+    /* If user requests setting everything to default */
+    if(set_to_default && !new_config_not_found) {
+        /* We want to keep latitude & longitude though, so we cherry pick
+         * those values from the main config */
+
+        /* load config */
+        config_t *tmp = config_init();
+        assert(tmp);
+        assert(config_load(tmp, cpath) == 0);
+        /* reinterepet certain values */
+        config_reinterperet_val(tmp, "latitude", NUM);
+        config_reinterperet_val(tmp, "longitude", NUM);
+
+        /* cherry pick the values */
+        config_append_num(cfg, "latitude", config_getnum(tmp, "latitude", 0));
+        config_append_num(cfg, "longitude", config_getnum(tmp, "longitude", 0));
+        /* we are done */
+        config_free(tmp);
+    }
     load_config_values(cfg, &pconf, &conf);
+
+#define flag_bool(n, v, set_to) \
+    if(strcmp(arg, n) == 0) {   \
+        v = set_to;             \
+    }
+
+#define flag_bool2(n1, n2, v, set_to)                  \
+    if(strcmp(arg, n1) == 0 || strcmp(arg, n2) == 0) { \
+        v = set_to;                                    \
+    }
+
+#define flag_num(n, v)                            \
+    if(strcmp(arg, n) == 0) {                     \
+        double val = strtod(argv[++argc2], NULL); \
+        v = val;                                  \
+    }
+
+#define flag_num2(n1, n2, v)                           \
+    if(strcmp(arg, n1) == 0 || strcmp(arg, n2) == 0) { \
+        double val = strtod(argv[++argc2], NULL);      \
+        v = val;                                       \
+    }
+
+#define flag_custom(n, c)     \
+    if(strcmp(arg, n) == 0) { \
+        c                     \
+    }
+
+#define flag_custom2(n1, n2, c)                        \
+    if(strcmp(arg, n1) == 0 || strcmp(arg, n2) == 0) { \
+        c                                              \
+    }
 
     int argc2 = 1;
     while(argc2 < argc) {
         const char *arg = argv[argc2];
-        if(strcmp(arg, "-12h") == 0) {
-            pconf.am_pm = true;
-        }
-        if(strcmp(arg, "-24h") == 0) {
-            pconf.am_pm = false;
-        }
-        if(strcmp(arg, "--seconds") == 0) {
-            pconf.seconds = true;
-        }
-        if(strcmp(arg, "-s") == 0 || strcmp(arg, "--silent") == 0) {
-            conf.silent_mode = true;
-        }
-        if(strcmp(arg, "-f") == 0 || strcmp(arg, "--show-future-only") == 0) {
-            conf.show_future_only = true;
-        }
-        if(strcmp(arg, "-ss") == 0 || strcmp(arg, "--sunset") == 0) {
-            conf.print_sunset = true;
-        }
-        if(strcmp(arg, "-u") == 0 || strcmp(arg, "--utc") == 0) {
-            conf.utc = true;
-        }
+        /* Anomaly options */
+
         if(strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0 ||
            strcmp(arg, "-?") == 0 || strcmp(arg, "?") == 0 ||
            strcmp(arg, "--usage") == 0) {
             conf.help = true;
         }
-        if(strcmp(arg, "--version") == 0) {
-            conf.version = true;
-        }
-        if(strcmp(arg, "-c") == 0 || strcmp(arg, "--color") == 0) {
-            pconf.color = true;
-        }
-        if(strcmp(arg, "-fa") == 0 || strcmp(arg, "--fajr-angle") == 0) {
-            double fajr_angle = strtod(argv[++argc2], NULL);
-            conf.timeconf.fajr_angle = fajr_angle;
-        }
-        if(strcmp(arg, "-aa") == 0 || strcmp(arg, "--asr-shadow-length") == 0) {
-            double asr_angle = strtod(argv[++argc2], NULL);
-            conf.timeconf.asr_shadow_length = asr_angle;
-        }
-        if(strcmp(arg, "-ia") == 0 || strcmp(arg, "--isha-angle") == 0) {
-            double isha_angle = strtod(argv[++argc2], NULL);
-            conf.timeconf.isha_angle = isha_angle;
-        }
-        if(strcmp(arg, "-mm") == 0 || strcmp(arg, "--maghrib-minutes") == 0) {
-            double maghrib_minutes = strtod(argv[++argc2], NULL);
-            conf.timeconf.maghrib_minutes = maghrib_minutes;
-        }
-        if(strcmp(arg, "-i") == 0 || strcmp(arg, "--isha-minutes") == 0) {
-            double isha_minutes = strtod(argv[++argc2], NULL);
-            conf.timeconf.isha_minutes = isha_minutes;
-        }
-        if(strcmp(arg, "-ma") == 0 || strcmp(arg, "--maghrib-angle") == 0) {
+
+        /* Normal options */
+
+        /* Toggles */
+        flag_bool("-12h", pconf.am_pm, true);
+        flag_bool("-24h", pconf.am_pm, false);
+        flag_bool("--seconds", pconf.seconds, true);
+        flag_bool("--version", conf.version, true);
+        flag_bool("--imsak", conf.imsak, true);
+        flag_bool("--midnight", conf.midnight, true);
+        flag_bool("--adjust", conf.adjust, true);
+
+        flag_bool2("-s", "--silent", conf.silent_mode, true);
+        flag_bool2("-f", "--show-future-only", conf.show_future_only, true);
+        flag_bool2("-ss", "--sunset", conf.print_sunset, true);
+        flag_bool2("-u", "--utc", conf.utc, true);
+        flag_bool2("-c", "--color", pconf.color, true);
+
+        /* Numeric argmuents */
+        flag_num2("-fa", "--fajr_angle", conf.timeconf.fajr_angle);
+        flag_num2("-aa", "--asr-shadow-length",
+                  conf.timeconf.asr_shadow_length);
+        flag_num2("-ia", "--isha-angle", conf.timeconf.isha_angle);
+        flag_num2("-mm", "--maghrib-minutes", conf.timeconf.maghrib_minutes);
+        flag_num2("-i", "--isha-minutes", conf.timeconf.isha_minutes);
+        flag_num2("-im", "--imsak-minutes", conf.imsak_minutes);
+        flag_num2("-e", "--elevation", conf.elevation);
+
+        /* Special arguments/flags */
+        flag_custom2("-ma", "--maghrib-angle", {
             double maghrib_angle = strtod(argv[++argc2], NULL);
             conf.timeconf.maghrib_angle = maghrib_angle;
             conf.timeconf.use_maghrib_angle = true;
-        }
-        if(strcmp(arg, "--imsak") == 0) {
-            conf.imsak = true;
-        }
-        if(strcmp(arg, "--midnight") == 0) {
-            conf.midnight = true;
-        }
-        if(strcmp(arg, "-im") == 0 || strcmp(arg, "--imsak-minutes") == 0) {
-            double imsak_minutes = strtod(argv[++argc2], NULL);
-            conf.imsak_minutes = imsak_minutes;
-        }
-        if(strcmp(arg, "--adjust") == 0) {
-            conf.adjust = true;
-        }
-        if(strcmp(arg, "-e") == 0 || strcmp(arg, "--elevation") == 0) {
-            double elev = strtod(argv[++argc2], NULL);
-            conf.elevation = elev;
-        }
+        });
 
         /* clang-format off */
 #define methodchk(name,n)                      \
@@ -782,6 +805,8 @@ int main(int argc, char *argv[])
 #else
     /* Linux doesn't have tm.tm_gmtoff and tm.tm_zone. Why??????? */
     struct tm utc_tm = *gmtime(&now);
+    /* Thanks https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c! */
+    utc_tm.tm_isdst = -1;
     off = mktime(&tm) - mktime(&utc_tm);
 #endif /* __APPLE__ */
 
