@@ -1,3 +1,18 @@
+# `2.0`
+## The big one
+
+List of changes:
+
+- Fixed DST bug(s)
+- Migration from old to new config system, will be removed in 3.0
+- Fixed many bugs
+- Cleaned up some stuff
+- Readable, yml-based config
+- Fixed some memory leaks & related memory crashes
+- Many, many more internal stuff
+
+I'm going to leave code cleanup to 2.1.
+
 # `2.0-beta4`
 Fixed DST bug
 
@@ -53,3 +68,6 @@ Prayer time adjustment
 
 # `1.2`
 Versioning system introduced; refactoring
+
+# pre-1.2
+Look at the git history

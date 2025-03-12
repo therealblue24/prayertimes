@@ -7,8 +7,11 @@ int iswhitespace(char c)
     return c == ' ' || c == '\t';
 }
 
+/* Free a config value */
 void config_val_free(config_val_t val)
 {
+    /* Shhhh.... it's my top debug strategy. */
+    /* printf("free: %s %p\n", val.name, val.value_str); */
     free(val.name);
     if(val.value_type == STRING) {
         free(val.value_str);
@@ -16,6 +19,7 @@ void config_val_free(config_val_t val)
     return;
 }
 
+/* Free a config */
 void config_free(config_t *cfg)
 {
     for(size_t i = 0; i < cfg->size; i++) {
@@ -25,6 +29,7 @@ void config_free(config_t *cfg)
     free(cfg);
 }
 
+/* Get a value's location given name */
 optsize_t config_get_val_loc(config_t *cfg, char *name)
 {
     for(size_t i = 0; i < cfg->size; i++) {
@@ -95,6 +100,8 @@ out:;
     return 0;
 }
 
+/* Next few functions are basically boilerplate helpers */
+
 int config_append_str(config_t *cfg, char *name, char *val)
 {
     return config_append_val(cfg, (config_val_t){ .name = name,
@@ -123,6 +130,7 @@ int config_append_bool(config_t *cfg, char *name, bool val)
                                                   .value_bool = val });
 }
 
+/* Delete a value given name */
 int config_delete_val(config_t *cfg, char *name)
 {
     optsize_t loc = config_get_val_loc(cfg, name);
@@ -133,6 +141,7 @@ int config_delete_val(config_t *cfg, char *name)
     return 0;
 }
 
+/* Reinterperet a value from string -> ... */
 int config_reinterperet_val(config_t *cfg, char *name, int newtype)
 {
     config_val_t val = config_get_val(cfg, name);
@@ -177,6 +186,7 @@ int config_reinterperet_val(config_t *cfg, char *name, int newtype)
     return config_set_val(cfg, name, val);
 }
 
+/* Emit a config in mem to a file */
 int config_emit(config_t *cfg, FILE *out)
 {
     static const char *bool_to_string[] = { "false", "true", NULL };
@@ -203,6 +213,7 @@ int config_emit(config_t *cfg, FILE *out)
     return 0;
 }
 
+/* debug */
 [[maybe_unused]] static void config_print_val(config_val_t v)
 {
     static const char *bool_to_string[] = { "false", "true", NULL };
@@ -226,6 +237,7 @@ int config_emit(config_t *cfg, FILE *out)
     return;
 }
 
+/* get a value from the config */
 config_val_t config_get_val(config_t *cfg, char *name)
 {
     const config_val_t null_value = (config_val_t){
@@ -239,6 +251,7 @@ config_val_t config_get_val(config_t *cfg, char *name)
     return null_value;
 }
 
+/* set a value to the config */
 int config_set_val(config_t *cfg, char *name, config_val_t val)
 {
     optsize_t loc = config_get_val_loc(cfg, name);
@@ -249,12 +262,14 @@ int config_set_val(config_t *cfg, char *name, config_val_t val)
     return 0;
 }
 
+/* allocate a config */
 config_t *config_init(void)
 {
     config_t *cfg = calloc(1, sizeof(config_t));
     return cfg;
 }
 
+/* load a config given file name */
 int config_load(config_t *cfg, const char *filename)
 {
     FILE *f = fopen(filename, "r");
@@ -283,12 +298,13 @@ int config_load(config_t *cfg, const char *filename)
                 "please don't use comments in the config it screws everything up\n");
             printf("solution coming soon (TM)\n");
             exit(EXIT_FAILURE);
-
+            /*
             while(i < size && c != '\n') {
                 c = fgetc(f);
                 i++;
             }
             continue;
+*/
         }
 
         if(c == ':') {
@@ -345,12 +361,15 @@ int config_load(config_t *cfg, const char *filename)
     return 0;
 }
 
+/* alloc + load */
 config_t *config_from(const char *filename)
 {
     config_t *cfg = config_init();
     config_load(cfg, filename);
     return cfg;
 }
+
+/* boilerplate */
 
 char *config_getstr(config_t *cfg, char *name, char *default_)
 {

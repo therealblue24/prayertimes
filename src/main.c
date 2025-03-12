@@ -14,7 +14,7 @@
 
 #define strlit(x) strndup(x, strlen(x) + 1)
 
-#define VERSION "2.0-beta3"
+#define VERSION "2.0"
 
 #define _str(x)       x
 #define xstr(x)       _str(#x)
@@ -66,6 +66,7 @@ static const char *months[] = { "January",   "Feburary", "March",    "April",
 static const char *weekdays[] = { "Sunday",   "Monday", "Tuesday",  "Wednesday",
                                   "Thursday", "Friday", "Saturday", NULL };
 
+/* safe remove basically */
 void remove_chk(char *path)
 {
     if(remove(path) == -1) {
@@ -73,12 +74,12 @@ void remove_chk(char *path)
                 strerror(errno));
         exit(EXIT_FAILURE);
 
-        printf("Hello.\n");
         return;
     }
     return;
 }
 
+/* fgets but better */
 void zfgets(char *buf, int size, FILE *f)
 {
     memset(buf, 0, size);
@@ -514,7 +515,7 @@ int main(int argc, char *argv[])
 
     /* If user requests setting everything to default */
     if(set_to_default && !new_config_not_found) {
-        /* We want to keep latitude & longitude though, so we cherry pick
+        /* We want to keep latitude, longitude, asr shadow length & elevation though, so we cherry pick
          * those values from the main config */
 
         /* load config */
@@ -524,10 +525,26 @@ int main(int argc, char *argv[])
         /* reinterepet certain values */
         config_reinterperet_val(tmp, "latitude", NUM);
         config_reinterperet_val(tmp, "longitude", NUM);
+        config_reinterperet_val(tmp, "asr_shadow_length", NUM);
+        config_reinterperet_val(tmp, "elevation", NUM);
+
+        /* fix crash */
+        config_val_t lat = config_get_val(tmp, "latitude");
+        config_val_t lng = config_get_val(tmp, "longitude");
+        lat.name = strndup(lat.name, 512);
+        lng.name = strndup(lng.name, 512);
+
+        config_val_t asr_factor = config_get_val(tmp, "asr_shadow_length");
+        config_val_t elev = config_get_val(tmp, "elevation");
+        asr_factor.name = strndup(asr_factor.name, 512);
+        elev.name = strndup(elev.name, 512);
 
         /* cherry pick the values */
-        config_append_num(cfg, "latitude", config_getnum(tmp, "latitude", 0));
-        config_append_num(cfg, "longitude", config_getnum(tmp, "longitude", 0));
+        config_append_val(cfg, lat);
+        config_append_val(cfg, lng);
+        config_append_val(cfg, asr_factor);
+        config_append_val(cfg, elev);
+
         /* we are done */
         config_free(tmp);
     }
@@ -794,6 +811,7 @@ int main(int argc, char *argv[])
 
     free(rpath);
     free(dpath);
+    free(cpath);
 
     struct tm tm = *localtime(&now);
 
@@ -950,5 +968,6 @@ int main(int argc, char *argv[])
 #undef S
 
     config_free(cfg);
+
     return 0;
 }

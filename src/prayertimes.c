@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Welcome to C */
+/* math.h doesn't have M_PI on Linux. Why??? */
 
 #ifndef M_PI
 #define M_PI (3.141592653589793238462)
@@ -11,6 +11,7 @@
 
 /* Math macros */
 
+/* you will not stop me */
 #define num double
 
 #define r2d(x)       (x * (180 / M_PI))
@@ -22,67 +23,39 @@
 #define datan2(y, x) (r2d(atan2(y, x)))
 
 /* bound angle to 0^ -> 360^ */
-num bound_angle(num ang)
+inline __attribute__((always_inline)) num bound_angle(num ang)
 {
     return fmod(ang + 360, 360);
 }
 
 /* bound hr to 0h -> 24h */
-num bound_hour(num hr)
+inline __attribute__((always_inline)) num bound_hour(num hr)
 {
     return fmod(hr + 24, 24);
-}
-
-/* calculate julian day number */
-num calc_jdn(num y, num m, num d)
-{
-    /*
-	From Wikipedia:
-	JDN = (1461 × (Y + 4800 + (M − 14)/12))/4 +(367 × (M − 2 − 12 × ((M − 14)/12)))/12 − (3 × ((Y + 4900 + (M - 14)/12)/100))/4 + D − 32075
-	*/
-    const num term0 = (m - 14) / 12;
-    const num term1 = y + 4800 + term0;
-    const num term2 = term1 * 365.25;
-
-    const num term3 = 12 * term0;
-    const num term4 = m - 2 - term3;
-    const num term5 = (367 * term4) / 12;
-    const num term6 = term2 + term5;
-
-    const num term7 = (y + 4900 + term0) / 100;
-    const num term8 = term7 * 3;
-    const num term9 = term8 / 4;
-
-    const num term10 = d;
-    const num term11 = 32075;
-    return term6 - term9 + term10 - term11;
-}
-
-/* calculate julian day */
-num calc_jd(num jdn, num hour, num minute, num second)
-{
-    return jdn + (hour - 12) / 24 + (minute) / 1440 + (second) / 86400;
-}
-
-/* julian day from unix timestamp */
-num jd_now(time_t now)
-{
-    struct tm *t = gmtime(&now);
-    num jdn_now = calc_jdn(t->tm_year + 1900, t->tm_mon + 1, t->tm_mday);
-    num jd = calc_jd(jdn_now, t->tm_hour, t->tm_min, t->tm_sec);
-    return jd;
 }
 
 /* julian day number from unix timestamp */
 num jdn_now(time_t now)
 {
+    time_t n = now;
+
+    /* timezone detection */
+
+    struct tm tm = *localtime(&n);
+    /* Linux doesn't have tm.tm_gmtoff and tm.tm_zone. Why??????? */
+    struct tm utc_tm = *gmtime(&now);
+    /* Thanks https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c! */
+    utc_tm.tm_isdst = -1;
+    long off = mktime(&tm) - mktime(&utc_tm);
+
+    /* main thing */
+
     /* Thanks to Wikipedia (https://en.wikipedia.org/wiki/Julian_day#Variants)
      * for this clever trick! */
-    long off = mktime(localtime(&now)) - mktime(gmtime(&now));
-    time_t n = now + off;
-    n -= (n % 86400);
+    n += off; /* adjust to UTC */
+    n -= (n % 86400); /* beginning of day */
     num jd = (num)n;
-    jd = (n / 86400.) + 2440587.5;
+    jd = (n / 86400.) + 2440587.5; /* timestamp -> JDN */
     return jd;
 }
 
@@ -91,21 +64,6 @@ num suntime_now(time_t now)
 {
     time_t d = now % 86400;
     return ((num)d / 3600.0);
-}
-
-/* julian day from struct tm */
-num jd_tm(struct tm *t)
-{
-    num jdn_now = calc_jdn(t->tm_year + 1900, t->tm_mon + 1, t->tm_mday);
-    num jd = calc_jd(jdn_now, t->tm_hour, t->tm_min, t->tm_sec);
-    return jd;
-}
-
-/* unused i think */
-num jdn_tm(struct tm *t)
-{
-    num jdn_now = calc_jdn(t->tm_year + 1900, t->tm_mon + 1, t->tm_mday);
-    return jdn_now;
 }
 
 /* internal function - do NOT use */
@@ -141,6 +99,7 @@ void calc_core(num jd, num *_q, num *_RA, num *_e, num *_L)
     return;
 }
 
+/* calculate equation of time given julian day */
 num eqt(num jd)
 {
     num q, RA;
@@ -148,6 +107,7 @@ num eqt(num jd)
     return (q / 15.0) - RA;
 }
 
+/* calculate solar declination given julian day */
 num dec(num jd)
 {
     num e, L;
@@ -155,6 +115,7 @@ num dec(num jd)
     return dasin(dsin(e) * dsin(L));
 }
 
+/* turn a suntime into a normal time */
 timelabel sun2norm(num suntime)
 {
     timelabel ret = { 0 };
@@ -173,6 +134,7 @@ timelabel sun2norm(num suntime)
     return ret;
 }
 
+/* T angle function */
 num angle_T(num a, [[maybe_unused]] num lng, num lat, num dec)
 {
     /* ref: http://praytimes.org/calculation */
@@ -182,17 +144,19 @@ num angle_T(num a, [[maybe_unused]] num lng, num lat, num dec)
     return (1. / 15.) * r2d(res);
 }
 
+/* arccotangent */
 num acot(num x)
 {
     return atan(1 / x);
-    //return -atan(x) + (M_PI / 2);
 }
 
+/* degree arccotangent */
 num dacot(num x)
 {
     return r2d(acot(x));
 }
 
+/* A angle function, for Asr */
 num angle_A(num n, num lat, [[maybe_unused]] num lng, num dec)
 {
     /* ref: http://praytimes.org/calculation */
@@ -233,6 +197,7 @@ static void print_time_12h_sec(const char *l, timelabel t, char **b)
              am_or_pm[pm]);
     return;
 }
+
 static void print_time_24h_no_sec(const char *l, timelabel t, char **b)
 {
     asprintf(b, "%s %2d:%02d\n", l, t.hour, t.minute);
@@ -245,9 +210,12 @@ static void print_time_24h_sec(const char *l, timelabel t, char **b)
     return;
 }
 
+/* RGB color */
 typedef struct color {
     uint8_t r, g, b;
 } color;
+
+/* A pair of 2 RGB colors */
 typedef struct colorp {
     color b, e;
 } colorp;
@@ -278,6 +246,7 @@ colorp times[8] = {
     { { 255, 255, 255 }, { 128, 128, 128 } },
 };
 
+/* mix 2 colors */
 color mix(colorp s, int i, int l)
 {
     float p2 = ((float)i) / ((float)(l - 1));
@@ -321,6 +290,7 @@ void print_time(const char *l, timelabel t, print_conf_t pconf, int time)
     }
     if(!pconf.color) {
         printf("%s", b);
+        free(b);
         return;
     }
     colorp colp = times[time];
@@ -338,6 +308,8 @@ void print_time(const char *l, timelabel t, print_conf_t pconf, int time)
         p += b[i] != ' ';
     }
     printf("\033[0m");
+
+    free(b);
     return;
 }
 
@@ -354,6 +326,7 @@ void print_time(const char *l, timelabel t, print_conf_t pconf, int time)
 
 enum { FAJR = 0, SUNRISE, DHUHR, ASR, SUNSET, MAGHRIB, ISHA };
 
+/* calculate a prayer schedule */
 void calc_schedule(num lat, num lng, num elev, num Z, time_t time, num *times,
                    times_conf conf)
 {
