@@ -1,3 +1,6 @@
+# `2.0.1`
+Possible bugfix for weird file names on Linux
+
 # `2.0`
 ## The big one
 

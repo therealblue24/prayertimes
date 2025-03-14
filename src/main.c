@@ -14,7 +14,7 @@
 
 #define strlit(x) strndup(x, strlen(x) + 1)
 
-#define VERSION "2.0"
+#define VERSION "2.0.1"
 
 #define _str(x)       x
 #define xstr(x)       _str(#x)
@@ -44,9 +44,30 @@ struct conf {
 };
 
 #ifndef __APPLE__
-/* too lazy to impl */
-#define strlcpy strncpy
-#define strlcat strncat
+
+size_t strlcpy(char *restrict dst, const char *restrict src, size_t dstsize)
+{
+    /* According to the strlcpy man page */
+    return snprintf(dst, dstsize, "%s", src);
+}
+
+size_t strlcat(char *restrict dst, const char *restrict src, size_t dstsize)
+{
+    /* According to the strlcat man page */
+    size_t max_append = dstsize - strlen(dst) - 1;
+    /* Find length to copy */
+    size_t src_len = strlen(src);
+    if(src_len > max_append) {
+        src_len = max_append;
+    }
+    size_t dst_end = strlen(dst);
+    /* Copy */
+    memcpy(dst + dst_end, src, src_len);
+    /* NUL terminate */
+    dst[dst_end + src_len] = 0;
+    return strlen(dst);
+}
+
 #endif /* __APPLE__ */
 
 static const char *prefixes[] = {
