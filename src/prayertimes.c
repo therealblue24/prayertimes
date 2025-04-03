@@ -1,7 +1,11 @@
+#ifdef __linux__
+#define _GNU_SOURCE
+#endif /* __linux__ */
 #include "prayertimes.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 /* math.h doesn't have M_PI on Linux. Why??? */
 
@@ -180,7 +184,8 @@ static void print_time_12h_no_sec(const char *l, timelabel t, char **b)
     if(t.hour == 0)
         t.hour = 12;
     const char *am_or_pm[] = { "AM", "PM" };
-    asprintf(b, "%s %2d:%02d %s\n", l, t.hour, t.minute, am_or_pm[pm]);
+    asprintf(b, "%s %2" PRId32 ":%02" PRId32 " %s\n", l, t.hour, t.minute,
+	         am_or_pm[pm]);
     return;
 }
 
@@ -193,20 +198,21 @@ static void print_time_12h_sec(const char *l, timelabel t, char **b)
     if(t.hour == 0)
         t.hour = 12;
     const char *am_or_pm[] = { "AM", "PM" };
-    asprintf(b, "%s %2d:%02d:%02d %s\n", l, t.hour, t.minute, t.second,
-             am_or_pm[pm]);
+    asprintf(b, "%s %2" PRId32 ":%02" PRId32 ":%02" PRId32 " %s\n", l, t.hour,
+	         t.minute, t.second, am_or_pm[pm]);
     return;
 }
 
 static void print_time_24h_no_sec(const char *l, timelabel t, char **b)
 {
-    asprintf(b, "%s %2d:%02d\n", l, t.hour, t.minute);
+    asprintf(b, "%s %2" PRId32 ":%02" PRId32 "\n", l, t.hour, t.minute);
     return;
 }
 
 static void print_time_24h_sec(const char *l, timelabel t, char **b)
 {
-    asprintf(b, "%s %2d:%02d:%02d\n", l, t.hour, t.minute, t.second);
+    asprintf(b, "%s %2" PRId32 ":%02" PRId32 ":%02" PRId32 "\n", l, t.hour,
+	         t.minute, t.second);
     return;
 }
 
@@ -266,7 +272,7 @@ color mix(colorp s, int i, int l)
 
 void setcol(color c)
 {
-    printf("\033[38;2;%d;%d;%dm", c.r, c.g, c.b);
+    printf("\033[38;2;%" PRId32 ";%" PRId32 ";%" PRId32 "m", c.r, c.g, c.b);
 }
 
 void print_time(const char *l, timelabel t, print_conf_t pconf, int time)
