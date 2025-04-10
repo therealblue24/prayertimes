@@ -14,7 +14,7 @@
 
 #define strlit(x) strndup(x, strlen(x) + 1)
 
-#define VERSION "2.0.1"
+#define VERSION "2.0.2"
 
 #define _str(x)       x
 #define xstr(x)       _str(#x)
@@ -832,7 +832,6 @@ int main(int argc, char *argv[])
 
     free(rpath);
     free(dpath);
-    free(cpath);
 
     struct tm tm = *localtime(&now);
 
@@ -989,6 +988,7 @@ int main(int argc, char *argv[])
 #undef S
 
     config_free(cfg);
+    free(cpath);
 
     return 0;
 }

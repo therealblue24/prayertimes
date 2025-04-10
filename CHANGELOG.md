@@ -1,3 +1,7 @@
+# `2.0.2`
+Bugfix for use-after-free
+Merge PR `portability++`
+
 # `2.0.1`
 Possible bugfix for weird file names on Linux
 

@@ -1,6 +1,8 @@
 CC = clang
 CFLAGS = -std=c23 -O0 -g -Wall -Wextra -Wunused -Wunreachable-code
 LDFLAGS = -lm
+# CFLAGS += -fsanitize=undefined,address,leak
+# LDFLAGS += -fsanitize=undefined,address,leak
 SRC = $(wildcard src/**/*.c) $(wildcard src/*.c) $(wildcard src/**/**/*.c) $(wildcard src/**/**/**/*.c)
 OBJ = $(SRC:.c=.o)
 BINDIR = bin
