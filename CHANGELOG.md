@@ -1,3 +1,11 @@
+# `2.0.3`
+Added new makefile flags (`CODEREVIEW` and `SANITIZERS`):
+
+- `make CODEREVIEW=yes`: Enable basically every warning in the book that we want
+- `make SANITIZERS=yes`: Enable sanitizers
+
+Also fixed some obscure bugs
+
 # `2.0.2`
 Bugfix for use-after-free
 Merge PR `portability++`

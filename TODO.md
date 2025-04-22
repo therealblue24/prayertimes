@@ -12,4 +12,4 @@
 ## Nice to haves
 - [ ] GUI version
 - [ ] Hijri calendar
-- [ ] Switch to better command line option parser
+- [x] Switch to better command line option parser

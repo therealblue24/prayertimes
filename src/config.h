@@ -15,18 +15,15 @@
 
 /* A config value */
 typedef struct config_val {
-    char *name;
     int value_type;
     union {
-        char *value_str;
-        double value_num;
-        int value_int;
-        bool value_bool;
-    };
-    union {
-        bool ignore;
-        bool notexist;
-    }; /* Has a double meaning: either ignore this or this value doesn't exist */
+        char *str;
+        double num;
+        int integer;
+        bool boolean;
+    } val;
+    char *name;
+    bool notexist;
 } config_val_t;
 
 /* A config */

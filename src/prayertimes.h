@@ -19,6 +19,8 @@ double dec(double jd);
 double angle_T(double a, double lng, double lat, double dec);
 /* A angle function */
 double angle_A(double n, double lng, double lat, double dec);
+/* fix angle */
+double bound_angle(double ang);
 /* fix suntime */
 double bound_hour(double hr);
 

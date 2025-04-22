@@ -2,7 +2,7 @@
 #include <stdatomic.h>
 #include <stdlib.h>
 
-int iswhitespace(char c)
+static int iswhitespace(char c)
 {
     return c == ' ' || c == '\t';
 }
@@ -11,10 +11,10 @@ int iswhitespace(char c)
 void config_val_free(config_val_t val)
 {
     /* Shhhh.... it's my top debug strategy. */
-    /* printf("free: %s %p\n", val.name, val.value_str); */
+    /* printf("free: %s %p\n", val.name, val.val.str); */
     free(val.name);
     if(val.value_type == STRING) {
-        free(val.value_str);
+        free(val.val.str);
     }
     return;
 }
@@ -33,7 +33,7 @@ void config_free(config_t *cfg)
 optsize_t config_get_val_loc(config_t *cfg, char *name)
 {
     for(size_t i = 0; i < cfg->size; i++) {
-        if(strcmp(cfg->vals[i].name, name) == 0 && !cfg->vals[i].ignore) {
+        if(strcmp(cfg->vals[i].name, name) == 0 && !cfg->vals[i].notexist) {
             return (optsize_t){ .has_value = true, .val = i };
         }
     }
@@ -58,7 +58,8 @@ int config_append_val(config_t *cfg, config_val_t val)
         return 1;
     }
 
-    bool found = false;
+    bool found;
+    found = false;
     size_t l;
 
     optsize_t l_ = config_get_val_loc(cfg, val.name);
@@ -70,7 +71,7 @@ int config_append_val(config_t *cfg, config_val_t val)
     /* Try to find an unused slot */
 
     for(l = 0; l < cfg->size; l++) {
-        if(cfg->vals[l].ignore) {
+        if(cfg->vals[l].notexist) {
             found = true;
             goto out;
         }
@@ -106,28 +107,27 @@ int config_append_str(config_t *cfg, char *name, char *val)
 {
     return config_append_val(cfg, (config_val_t){ .name = name,
                                                   .value_type = STRING,
-                                                  .value_str = val });
+                                                  .val.str = val });
 }
 
 int config_append_num(config_t *cfg, char *name, double val)
 {
-    return config_append_val(cfg, (config_val_t){ .name = name,
-                                                  .value_type = NUM,
-                                                  .value_num = val });
+    return config_append_val(
+        cfg, (config_val_t){ .name = name, .value_type = NUM, .val.num = val });
 }
 
 int config_append_int(config_t *cfg, char *name, int val)
 {
     return config_append_val(cfg, (config_val_t){ .name = name,
                                                   .value_type = INT,
-                                                  .value_int = val });
+                                                  .val.integer = val });
 }
 
 int config_append_bool(config_t *cfg, char *name, bool val)
 {
     return config_append_val(cfg, (config_val_t){ .name = name,
                                                   .value_type = BOOL,
-                                                  .value_bool = val });
+                                                  .val.boolean = val });
 }
 
 /* Delete a value given name */
@@ -137,7 +137,7 @@ int config_delete_val(config_t *cfg, char *name)
     if(!loc.has_value) {
         return 1;
     }
-    cfg->vals[loc.val].ignore = true;
+    cfg->vals[loc.val].notexist = true;
     return 0;
 }
 
@@ -157,30 +157,34 @@ int config_reinterperet_val(config_t *cfg, char *name, int newtype)
         exit(EXIT_FAILURE);
     }
 
-    char *str = strndup(val.value_str, 512);
+    char *str;
+    str = strndup(val.val.str, 512);
     if(newtype != STRING) {
-        free(val.value_str);
+        free(val.val.str);
     }
     val.value_type = newtype;
     switch(newtype) {
     case STRING:
         break;
     case NUM:
-        val.value_num = strtod(str, NULL);
+        val.val.num = strtod(str, NULL);
         break;
     case INT:
-        val.value_int = (int)strtol(str, NULL, 10);
+        val.val.integer = (int)strtol(str, NULL, 10);
         break;
     case BOOL:;
-        int _true = strcmp(str, "true") == 0;
-        int _false = strcmp(str, "false") == 0;
-        if(_true) {
-            val.value_bool = true;
+        int istrue, isfalse;
+        istrue = strcmp(str, "true") == 0;
+        isfalse = strcmp(str, "false") == 0;
+        if(istrue) {
+            val.val.boolean = true;
         }
-        if(_false) {
-            val.value_bool = false;
+        if(isfalse) {
+            val.val.boolean = false;
         }
         break;
+    default:
+        __builtin_unreachable();
     }
     free(str);
     return config_set_val(cfg, name, val);
@@ -195,16 +199,16 @@ int config_emit(config_t *cfg, FILE *out)
         fprintf(out, "%s: ", v.name);
         switch(v.value_type) {
         case STRING:
-            fprintf(out, "%s\n", v.value_str);
+            fprintf(out, "%s\n", v.val.str);
             break;
         case NUM:
-            fprintf(out, "%lf\n", v.value_num);
+            fprintf(out, "%lf\n", v.val.num);
             break;
         case INT:
-            fprintf(out, "%d\n", v.value_int);
+            fprintf(out, "%d\n", v.val.integer);
             break;
         case BOOL:
-            fprintf(out, "%s\n", bool_to_string[v.value_bool]);
+            fprintf(out, "%s\n", bool_to_string[v.val.boolean]);
             break;
         default:
             return 1;
@@ -214,34 +218,33 @@ int config_emit(config_t *cfg, FILE *out)
 }
 
 /* debug */
-[[maybe_unused]] static void config_print_val(config_val_t v)
+__attribute__((unused)) static void config_print_val(config_val_t v)
 {
     static const char *bool_to_string[] = { "false", "true", NULL };
     printf("%s: ", v.name);
     switch(v.value_type) {
     case STRING:
-        printf("%s\n", v.value_str);
+        printf("%s\n", v.val.str);
         return;
     case NUM:
-        printf("%lf\n", v.value_num);
+        printf("%lf\n", v.val.num);
         return;
     case INT:
-        printf("%d\n", v.value_int);
+        printf("%d\n", v.val.integer);
         return;
     case BOOL:
-        printf("%s\n", bool_to_string[v.value_bool]);
+        printf("%s\n", bool_to_string[v.val.boolean]);
         return;
     default:
-        return;
+        __builtin_unreachable();
     }
-    return;
 }
 
 /* get a value from the config */
 config_val_t config_get_val(config_t *cfg, char *name)
 {
     const config_val_t null_value = (config_val_t){
-        .name = name, .notexist = true, .value_type = STRING, .value_str = NULL
+        .name = name, .notexist = true, .value_type = STRING, .val.str = NULL
     };
 
     optsize_t loc = config_get_val_loc(cfg, name);
@@ -277,19 +280,21 @@ int config_load(config_t *cfg, const char *filename)
         return 1;
     }
 
-    size_t size = 0;
+    size_t size;
+    size = 0;
     fseek(f, 0, SEEK_END);
-    size = ftell(f);
+    size = (size_t)ftell(f);
     rewind(f);
 
     char name[100] = { 0 };
     size_t name_l = 0;
-    config_val_t v = { .value_type = STRING, .value_str = NULL };
+    config_val_t v = { .value_type = STRING, .val.str = NULL };
     size_t i = 0;
     bool did_something = false;
     while(i < size) {
         did_something = false;
-        char c = fgetc(f);
+        char c;
+        c = (char)fgetc(f);
         if(iswhitespace(c) || c == '\r' || c == '\n') {
             continue;
         }
@@ -308,39 +313,40 @@ int config_load(config_t *cfg, const char *filename)
         }
 
         if(c == ':') {
-            c = fgetc(f);
+            c = (char)fgetc(f);
             i++;
             while(i < size && iswhitespace(c)) {
-                c = fgetc(f);
+                c = (char)fgetc(f);
                 i++;
             }
-            size_t j = i;
+            size_t j;
+            j = i;
             while(j < size && c != '\n') {
-                c = fgetc(f);
+                c = (char)fgetc(f);
                 j++;
             }
-            fseek(f, i, SEEK_SET);
+            fseek(f, (long)i, SEEK_SET);
             char *str = calloc(1, (j - i) + 1);
             fread(str, (j - i), 1, f);
-            for(size_t i = 0; i < 100; i++) {
-                if(name[i] == '\n' || name[i] == '\r' ||
-                   iswhitespace(name[i])) {
-                    name[i] = '\0';
+            for(size_t k = 0; k < 100; k++) {
+                if(name[k] == '\n' || name[k] == '\r' ||
+                   iswhitespace(name[k])) {
+                    name[k] = '\0';
                 }
             }
-            for(size_t i = 0; i < (j - i) + 1; i++) {
-                if(str[i] == '\n' || str[i] == '\r') {
-                    str[i] = '\0';
+            for(size_t k = 0; k < (j - i) + 1; k++) {
+                if(str[k] == '\n' || str[k] == '\r') {
+                    str[k] = '\0';
                 }
             }
             i = j;
             do {
-                c = fgetc(f);
+                c = (char)fgetc(f);
                 i++;
             } while(i < size && c != '\n');
             v.name = strndup(name, 100);
-            v.value_str = strndup(str, 512);
-            v.ignore = false;
+            v.val.str = strndup(str, 512);
+            v.notexist = false;
             v.value_type = STRING;
             config_append_val(cfg, v);
             name_l = 0;
@@ -377,7 +383,7 @@ char *config_getstr(config_t *cfg, char *name, char *default_)
     if(v.notexist) {
         return default_;
     }
-    return v.value_str;
+    return v.val.str;
 }
 
 double config_getnum(config_t *cfg, char *name, double default_)
@@ -386,7 +392,7 @@ double config_getnum(config_t *cfg, char *name, double default_)
     if(v.notexist) {
         return default_;
     }
-    return v.value_num;
+    return v.val.num;
 }
 
 int config_getint(config_t *cfg, char *name, int default_)
@@ -395,7 +401,7 @@ int config_getint(config_t *cfg, char *name, int default_)
     if(v.notexist) {
         return default_;
     }
-    return v.value_int;
+    return v.val.integer;
 }
 
 bool config_getbool(config_t *cfg, char *name, bool default_)
@@ -404,5 +410,5 @@ bool config_getbool(config_t *cfg, char *name, bool default_)
     if(v.notexist) {
         return default_;
     }
-    return v.value_bool;
+    return v.val.boolean;
 }

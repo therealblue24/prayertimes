@@ -3,9 +3,15 @@ Prayer time calculation software, coded in C.
 
 Currently there is only a terminal CLI, library coming soon (TM)! 
 
+# Note
+This is mostly complete and usable software by now.
+
+However, if you find an issue I (possibly) would fix it.
+
+If you have a feature idea make a PR.
+
 ## Features
 - Calculating the 5 prayer times
-	- And yes, Asr calculation is now fixed.
 - Sunset & sunrise
 - Midnight
 - Imsak

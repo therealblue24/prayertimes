@@ -14,7 +14,7 @@
 
 #define strlit(x) strndup(x, strlen(x) + 1)
 
-#define VERSION "2.0.2"
+#define VERSION "2.0.3"
 
 #define _str(x)       x
 #define xstr(x)       _str(#x)
@@ -88,23 +88,23 @@ static const char *weekdays[] = { "Sunday",   "Monday", "Tuesday",  "Wednesday",
                                   "Thursday", "Friday", "Saturday", NULL };
 
 /* safe remove basically */
-void remove_chk(char *path)
+static void remove_chk(char *path)
 {
     if(remove(path) == -1) {
         fprintf(stderr, "ERROR: Failed to delete %s: %s\n", path,
                 strerror(errno));
         exit(EXIT_FAILURE);
-
-        return;
     }
     return;
 }
 
 /* fgets but better */
-void zfgets(char *buf, int size, FILE *f)
+static void zfgets(char *buf, int size, FILE *f)
 {
+    char *v;
     memset(buf, 0, size);
-    char *v = fgets(buf, size, f);
+
+    v = fgets(buf, size, f);
     if(!v) {
         fprintf(stderr, "ERROR: Failed to read stdin: %s\n", strerror(errno));
         exit(EXIT_FAILURE);
@@ -117,7 +117,7 @@ void zfgets(char *buf, int size, FILE *f)
     return;
 }
 
-void init_conf(config_t *cfg, [[maybe_unused]] char *path)
+static void init_conf(config_t *cfg)
 {
     char b[512] = { 0 };
     double lat = 0, lng = 0, elev = 0, ang = 0;
@@ -138,16 +138,19 @@ void init_conf(config_t *cfg, [[maybe_unused]] char *path)
             b[i] = 0;
         }
         if(b[i])
-            b[i] = tolower(b[i]);
+            b[i] = (char)tolower(b[i]);
     }
     if(strcmp(b, "shia") == 0) {
         ang = 2. / 7.;
     } else if(strcmp(b, "sunni") == 0) {
+        long res;
 label0:;
         printf("Shafi'i (1) or Hanafi (2)?\n");
         zfgets(b, sizeof(b), stdin);
-        ang = strtod(b, NULL);
-        if(ang != 1 && ang != 2) {
+
+        res = strtol(b, NULL, 10);
+        ang = (double)res;
+        if(res != 1 && res != 2) {
             /* the legend of sisyphus */
             goto label0;
         }
@@ -159,8 +162,8 @@ label0:;
 #define N(x, y)                                               \
     config_append_val(cfg, (config_val_t){ .name = x,         \
                                            .value_type = NUM, \
-                                           .value_num = y,    \
-                                           .ignore = false })
+                                           .val.num = y,      \
+                                           .notexist = false })
     goto end;
 end:;
     printf("Ok, preparing config file... \n");
@@ -175,20 +178,20 @@ end:;
 #undef N
 }
 
-void copyright(void)
+static void copyright(void)
 {
     printf(
         "therealblue24's prayer time calculator\nCopyright (C) 2025 therealblue24 (under the MIT license).\n");
     return;
 }
 
-void show_version(void)
+static void show_version(void)
 {
     printf("version " VERSION ", " __DATE__ "\n");
     return;
 }
 
-void show_help(bool version)
+static void show_help(bool version)
 {
     copyright();
     if(version) {
@@ -238,13 +241,13 @@ void show_help(bool version)
     printf("\t--rewrite\t\t\trewrite config\n");
 }
 
-void reinterperet_config_values(config_t *cfg)
+static void reinterperet_config_values(config_t *cfg)
 {
 #define X(v, t) config_reinterperet_val(cfg, v, t)
 #define B(v)    X(xstr(v), BOOL)
 #define N(v)    X(xstr(v), NUM)
-#define I(v)    X(xstr(v), INT)
-#define S(v)    X(xstr(v), STRING)
+    //#define I(v)    X(xstr(v), INT)
+    //#define S(v)    X(xstr(v), STRING)
 
     B(silent_mode);
     B(show_future_only);
@@ -290,13 +293,14 @@ void reinterperet_config_values(config_t *cfg)
 #undef S
 }
 
-void load_config_values(config_t *cfg, print_conf_t *pc, struct conf *c)
+static void load_config_values(config_t *cfg, print_conf_t *pc, struct conf *c)
 {
 #define B(s, n, v) s = config_getbool(cfg, n, v)
 #define N(s, n, v) s = config_getnum(cfg, n, v)
-#define I(s, n, v) s = config_getint(cfg, n, v)
-#define S(s, n, v) s = config_getstr(cfg, n, v)
-#define tc         c->timeconf
+//#define I(s, n, v) s = config_getint(cfg, n, v)
+//#define S(s, n, v) s = config_getstr(cfg, n, v)
+#define tc c->timeconf
+    char *method;
 
     B(c->silent_mode, "silent_mode", false);
     B(c->show_future_only, "show_future_only", false);
@@ -332,19 +336,19 @@ void load_config_values(config_t *cfg, print_conf_t *pc, struct conf *c)
     B(pc->am_pm, "12_hour_time", true);
     B(pc->color, "color", false);
 
-    char *method = config_getstr(cfg, "method", "none");
+    method = config_getstr(cfg, "method", "none");
 #define C(s, n)                        \
     if(strcmp(method, xstr(s)) == 0) { \
         c->method = n;                 \
     }
-    C(none, 0);
-    C(mwl, 1);
-    C(isna, 2);
-    C(egypt, 3);
-    C(makkah, 4);
-    C(karachi, 5);
-    C(tehran, 6);
-    C(jafari, 7);
+    C(none, 0)
+    C(mwl, 1)
+    C(isna, 2)
+    C(egypt, 3)
+    C(makkah, 4)
+    C(karachi, 5)
+    C(tehran, 6)
+    C(jafari, 7)
 
 #undef B
 #undef N
@@ -380,18 +384,19 @@ static const struct conf default_conf = {
 
 int main(int argc, char *argv[])
 {
-    bool midnight_using_fajr = false;
-    bool emit_file = 0;
-    config_t *cfg = config_init();
-    assert(cfg);
-
     static const char *methods[] = { "none",   "mwl",     "isna",   "egypt",
                                      "makkah", "karachi", "tehran", "jafari" };
-
+    bool midnight_using_fajr = false;
+    bool emit_file = 0;
+    config_t *cfg;
     int ramadan = 0;
+
     print_conf_t pconf = { .am_pm = true, .seconds = false, .color = false };
     struct conf conf = default_conf;
     bool set_to_default = false;
+
+    cfg = config_init();
+    assert(cfg);
 
     /* Mega Priority flags */
     for(int i = 1; i < argc; i++) {
@@ -472,13 +477,13 @@ int main(int argc, char *argv[])
     }
 
     if(!configured && conf.reconf) {
-        init_conf(cfg, rpath);
+        init_conf(cfg);
         configured = true;
     }
 
     if(new_config_not_found && !configured && old_config_not_found) {
         printf("Configuring for first use\n");
-        init_conf(cfg, rpath);
+        init_conf(cfg);
         configured = true;
         /* I have no idea why emit_file = true; sets it to false. */
         /* Instead, emit_file = 1; works... inshallah this never
@@ -505,8 +510,8 @@ int main(int argc, char *argv[])
 #define N(x, y)                                               \
     config_append_val(cfg, (config_val_t){ .name = x,         \
                                            .value_type = NUM, \
-                                           .value_num = y,    \
-                                           .ignore = false })
+                                           .val.num = y,      \
+                                           .notexist = false })
 
         N("latitude", lat);
         N("longitude", lng);
@@ -581,11 +586,13 @@ int main(int argc, char *argv[])
         v = set_to;                                    \
     }
 
+    /*
 #define flag_num(n, v)                            \
     if(strcmp(arg, n) == 0) {                     \
         double val = strtod(argv[++argc2], NULL); \
         v = val;                                  \
     }
+*/
 
 #define flag_num2(n1, n2, v)                           \
     if(strcmp(arg, n1) == 0 || strcmp(arg, n2) == 0) { \
@@ -593,10 +600,12 @@ int main(int argc, char *argv[])
         v = val;                                       \
     }
 
+    /*
 #define flag_custom(n, c)     \
     if(strcmp(arg, n) == 0) { \
         c                     \
     }
+*/
 
 #define flag_custom2(n1, n2, c)                        \
     if(strcmp(arg, n1) == 0 || strcmp(arg, n2) == 0) { \
