@@ -1,54 +1,74 @@
+# Prayertimes Makefile
+# Copyright (C) 2025 therealblue24
+
+# set this to 1 for release mode
+RELEASE = 0 
+# set this to your favorite compiler
 CC = clang
-CFLAGS = -std=c99 -O0 -g
+# binary directory
+BINDIR = bin
+# app name
+APP = prayertimes
+# lib name
+LIBNAM = libprayertimes.a
+
+CFLAGS = -std=c99 -Wall -Wextra -Isrc -Iinclude -g 
 LDFLAGS = -lm
 
-ifeq ($(CODEREVIEW), yes)
-	# Enable EVERYTHING.
-	CFLAGS += -Weverything
-	# We are using C
-	CFLAGS += -Wno-unsafe-buffer-usage
-	# We don't care about trailing ;
-	CFLAGS += -Wno-extra-semi-stmt
-	# We are using C99
-	CFLAGS += -Wno-declaration-after-statement
-	# I honestly don't care right know
-	CFLAGS += -Wno-padded
-	# I don't care
-	CFLAGS += -Wno-date-time
-	# I don't care
-	CFLAGS += -Wno-float-equal
+ifeq ($(RELEASE), yes)
+	CFLAGS += -O2
 endif
 
-ifeq ($(SANITIZERS), yes)
+ifeq ($(CODE_REVIEW), yes)
+	# Enable EVERYTHING.
+    CFLAGS += -Weverything
+    # We are using C
+    CFLAGS += -Wno-unsafe-buffer-usage
+    # We don't care about trailing ;
+    CFLAGS += -Wno-extra-semi-stmt
+    # We are using C99
+    CFLAGS += -Wno-declaration-after-statement
+    # I honestly don't care right know
+    CFLAGS += -Wno-padded
+    # I don't care
+    CFLAGS += -Wno-date-time
+    # I don't care
+    CFLAGS += -Wno-float-equal
+endif
+
+ifeq ($(SANTIZERS), yes)
 	CFLAGS += -fsanitize=undefined,address,leak
 	LDFLAGS += -fsanitize=undefined,address,leak
 endif
 
-SRC = $(wildcard src/**/*.c) $(wildcard src/*.c) $(wildcard src/**/**/*.c) $(wildcard src/**/**/**/*.c)
+SRC = $(wildcard src/*.c)
+LIBSRC = $(filter-out src/main.c, $(SRC))
 OBJ = $(SRC:.c=.o)
-BINDIR = bin
-BIN = prayertimes
+LIBOBJ = $(LIBSRC:.c=.o)
 
-.PHONY: all
+.PHONY: dirs build test link
 
-all: dirs make
-
-run: $(BINDIR)/$(BIN) 
-	@$(BINDIR)/$(BIN)
-
-$(BINDIR): dirs
+all: dirs build link
 
 dirs:
-	@mkdir -p ./$(BINDIR)
-	@echo "made dir $(BINDIR)"
-
-make: $(OBJ) dirs
-	@$(CC) $(OBJ) $(LDFLAGS) -o $(BINDIR)/$(BIN)
-	@echo "made exe $(LIB_BIN)"
+	@# Create bin dir
+	@mkdir -p $(BINDIR)
 
 %.o: %.c
-	@echo "compiled $<"
+	@echo "compiling $<"
 	@$(CC) -o $@ -c $< $(CFLAGS)
+
+build: dirs $(OBJ)
+
+link: build
+	@echo "linking library"
+	@ar rcs $(BINDIR)/$(LIBNAM)	$(LIBOBJ)
+	@echo "made lib $(LIBNAM)"
+	@echo "linking $(APP)"
+	@$(CC) -o $(BINDIR)/$(APP) $(LDFLAGS) $(OBJ)
+	@echo "made $(APP)"
+
 clean:
+	@echo "cleaning"
 	@rm -rf $(OBJ) $(BINDIR)
 	@echo "cleaned"
