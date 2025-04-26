@@ -5,30 +5,32 @@
 #include <stdbool.h>
 #include <time.h>
 
+#define APIFN __attribute__((visibility("hidden")))
+
 typedef struct {
     int hour, minute, second, millisecond;
 } timelabel;
 
-#define PRAYERTIMES_LIB_VER "1.0.1"
+#define PRAYERTIMES_LIB_VER "1.0.2"
 
 /* give current suntime given timestamp */
-double suntime_now(time_t now);
+double APIFN suntime_now(time_t now);
 /* equation of time */
-double eqt(double jd);
+double APIFN eqt(double jd);
 /* sun declination */
-double dec(double jd);
+double APIFN dec(double jd);
 /* T angle function */
-double angle_T(double a, double lng, double lat, double dec);
+double APIFN angle_T(double a, double lng, double lat, double dec);
 /* A angle function */
-double angle_A(double n, double lng, double lat, double dec);
+double APIFN angle_A(double n, double lng, double lat, double dec);
 /* fix angle */
-double bound_angle(double ang);
+double APIFN bound_angle(double ang);
 /* fix suntime */
-double bound_hour(double hr);
+double APIFN bound_hour(double hr);
 /* get JDN */
-double jdn_now(time_t t);
+double APIFN jdn_now(time_t t);
 /* get JDN but special */
-double jdn_now_with_timezone(time_t t, time_t off);
+double APIFN jdn_now_with_timezone(time_t t, time_t off);
 
 typedef struct {
     double asr_shadow_length; /* shadow length of Asr */
@@ -53,12 +55,12 @@ typedef struct {
  * times: array to store prayer times in
  * conf: configuration
  */
-void calc_schedule(double lat, double lng, double elev, double Z, time_t time,
-                   double *times, times_conf conf);
+void APIFN calc_schedule(double lat, double lng, double elev, double Z,
+                         time_t time, double *times, times_conf conf);
 
 /* adjust times, same args as calc_schedule */
-void adjust_times(double lat, double lng, double elev, double Z, time_t time,
-                  double *times, times_conf conf);
+void APIFN adjust_times(double lat, double lng, double elev, double Z,
+                        time_t time, double *times, times_conf conf);
 
 typedef struct print_conf {
     bool am_pm; /* AM/PM time? */
@@ -67,9 +69,9 @@ typedef struct print_conf {
 } print_conf_t;
 
 /* print a time */
-void print_time(const char *l, timelabel t, print_conf_t conf, int time);
+void APIFN print_time(const char *l, timelabel t, print_conf_t conf, int time);
 
 /* suntime -> timelabel */
-timelabel sun2norm(double suntime);
+timelabel APIFN sun2norm(double suntime);
 
 #endif /* #ifndef PRAYER_TIMES_PRIVATE_H_ */

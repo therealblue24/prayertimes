@@ -27,18 +27,18 @@
 #define datan2(y, x) (r2d(atan2(y, x)))
 
 /* bound angle to 0^ -> 360^ */
-num bound_angle(num ang)
+APIFN num bound_angle(num ang)
 {
     return fmod(ang + 360, 360);
 }
 
 /* bound hr to 0h -> 24h */
-num bound_hour(num hr)
+APIFN num bound_hour(num hr)
 {
     return fmod(hr + 24, 24);
 }
 
-num jdn_now_with_timezone(time_t now, time_t off)
+APIFN num jdn_now_with_timezone(time_t now, time_t off)
 {
     time_t n = now;
     /* main thing */
@@ -54,7 +54,7 @@ num jdn_now_with_timezone(time_t now, time_t off)
 
 /* julian day number from unix timestamp */
 /* unused.. for now.. */
-num jdn_now(time_t now)
+APIFN num jdn_now(time_t now)
 {
     time_t n = now;
     /* timezone detection */
@@ -69,14 +69,14 @@ num jdn_now(time_t now)
 }
 
 /* suntime from unix timestamp */
-num suntime_now(time_t now)
+APIFN num suntime_now(time_t now)
 {
     time_t d = now % 86400;
     return ((num)d / 3600.0);
 }
 
 /* internal function - do NOT use */
-static void calc_core(num jd, num *_q, num *_ra, num *_e, num *_l)
+APIFN static inline void calc_core(num jd, num *_q, num *_ra, num *_e, num *_l)
 {
     /* ref: http://praytimes.org/calculation */
     /* Should be accurate for the next 2 centures from 2000. */
@@ -109,7 +109,7 @@ static void calc_core(num jd, num *_q, num *_ra, num *_e, num *_l)
 }
 
 /* calculate equation of time given julian day */
-num eqt(num jd)
+APIFN num eqt(num jd)
 {
     num q, RA;
     calc_core(jd, &q, &RA, NULL, NULL);
@@ -117,7 +117,7 @@ num eqt(num jd)
 }
 
 /* calculate solar declination given julian day */
-num dec(num jd)
+APIFN num dec(num jd)
 {
     num e, L;
     calc_core(jd, NULL, NULL, &e, &L);
@@ -125,7 +125,7 @@ num dec(num jd)
 }
 
 /* turn a suntime into a normal time */
-timelabel sun2norm(num suntime)
+APIFN timelabel sun2norm(num suntime)
 {
     timelabel ret = { 0 };
     num work = suntime, tmp = 0;
@@ -148,7 +148,7 @@ timelabel sun2norm(num suntime)
 }
 
 /* T angle function */
-num angle_T(num a, __attribute__((unused)) num lng, num lat, num dec)
+APIFN num angle_T(num a, __attribute__((unused)) num lng, num lat, num dec)
 {
     /* ref: http://praytimes.org/calculation */
     const num upper = -dsin(a) - (dsin(lat) * dsin(dec));
@@ -158,19 +158,19 @@ num angle_T(num a, __attribute__((unused)) num lng, num lat, num dec)
 }
 
 /* arccotangent */
-static num acot(num x)
+static APIFN num acot(num x)
 {
     return atan(1 / x);
 }
 
 /* degree arccotangent */
-static num dacot(num x)
+static APIFN num dacot(num x)
 {
     return r2d(acot(x));
 }
 
 /* A angle function, for Asr */
-num angle_A(num n, num lat, num lng, num dec)
+APIFN num angle_A(num n, num lat, num lng, num dec)
 {
     /* ref: http://praytimes.org/calculation */
     /* And also inspired from C++ impl in http://praytimes.org/wiki/Code */
@@ -184,7 +184,7 @@ num angle_A(num n, num lat, num lng, num dec)
     return angle_T(angle, lng, lat, dec);
 }
 
-static void print_time_12h_no_sec(const char *l, timelabel t, char **b)
+static APIFN void print_time_12h_no_sec(const char *l, timelabel t, char **b)
 {
     int pm = t.hour >= 12;
     if(pm && t.hour != 12) {
@@ -198,7 +198,7 @@ static void print_time_12h_no_sec(const char *l, timelabel t, char **b)
     return;
 }
 
-static void print_time_12h_sec(const char *l, timelabel t, char **b)
+static APIFN void print_time_12h_sec(const char *l, timelabel t, char **b)
 {
     int pm = t.hour >= 12;
     if(pm && t.hour != 12) {
@@ -212,13 +212,13 @@ static void print_time_12h_sec(const char *l, timelabel t, char **b)
     return;
 }
 
-static void print_time_24h_no_sec(const char *l, timelabel t, char **b)
+static APIFN void print_time_24h_no_sec(const char *l, timelabel t, char **b)
 {
     asprintf(b, "%s %2" PRId32 ":%02" PRId32 "\n", l, t.hour, t.minute);
     return;
 }
 
-static void print_time_24h_sec(const char *l, timelabel t, char **b)
+static APIFN void print_time_24h_sec(const char *l, timelabel t, char **b)
 {
     asprintf(b, "%s %2" PRId32 ":%02" PRId32 ":%02" PRId32 "\n", l, t.hour,
              t.minute, t.second);
@@ -256,7 +256,7 @@ static const colorp timecolor[8] = {
 };
 
 /* mix 2 colors */
-static color mix(colorp s, int i, int l)
+static APIFN color mix(colorp s, int i, int l)
 {
     float p2 = ((float)i) / ((float)(l - 1));
     float p1 = 1 - p2;
@@ -281,12 +281,12 @@ static color mix(colorp s, int i, int l)
     return (color){ (uint8_t)r, (uint8_t)g, (uint8_t)b };
 }
 
-static void setcol(color c)
+static APIFN void setcol(color c)
 {
     printf("\033[38;2;%" PRId32 ";%" PRId32 ";%" PRId32 "m", c.r, c.g, c.b);
 }
 
-void print_time(const char *l, timelabel t, print_conf_t pconf, int time)
+APIFN void print_time(const char *l, timelabel t, print_conf_t pconf, int time)
 {
     char *b = NULL;
     if(pconf.am_pm && !pconf.seconds) {
@@ -344,14 +344,14 @@ void print_time(const char *l, timelabel t, print_conf_t pconf, int time)
 enum { FAJR = 0, SUNRISE, DHUHR, ASR, SUNSET, MAGHRIB, ISHA };
 
 /* Dhuhr */
-static num midday(num jd, num lng, num Z)
+static APIFN num midday(num jd, num lng, num Z)
 {
     return 12 - eqt(jd) + (Z - (lng / 15));
 }
 
 /* calculate a prayer schedule */
-void calc_schedule(num lat, num lng, num elev, num Z, time_t time, num *times,
-                   times_conf conf)
+APIFN void calc_schedule(num lat, num lng, num elev, num Z, time_t time,
+                         num *times, times_conf conf)
 {
     num jd = jdn_now_with_timezone(time, 3600 * Z);
     num decl = dec(jd); // declination of the sun
@@ -395,8 +395,8 @@ void calc_schedule(num lat, num lng, num elev, num Z, time_t time, num *times,
 }
 
 /* Adjust times, inspired from C++ impl in http://praytimes.org/wiki/Code */
-void adjust_times(num lat, num lng, num elev, num Z, time_t time, num *times,
-                  times_conf conf)
+APIFN void adjust_times(num lat, num lng, num elev, num Z, time_t time,
+                        num *times, times_conf conf)
 {
     /* Fix times to represent true values */
     times[MAGHRIB] -= (conf.maghrib_minutes / 60);
