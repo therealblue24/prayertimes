@@ -1,3 +1,12 @@
+# lib: `1.0.1`
+Made a function to return version of library
+
+# lib: `1.0`
+Made a library that can be used to calculate prayer times
+
+# app: `2.0.4`
+Now shows version of library
+
 # `2.0.3`
 Added new makefile flags (`CODEREVIEW` and `SANITIZERS`):
 

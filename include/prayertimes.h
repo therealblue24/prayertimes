@@ -57,4 +57,7 @@ void prayertimes_calc(prayertimes_conf_t conf, time_t time, double times[7]);
 void prayertimes_adjust(prayertimes_conf_t conf, time_t time,
                         double in_times[7], double out_times[7]);
 
+/* Return version of libprayertimes */
+const char *prayertimes_version(void);
+
 #endif /* PRAYER_TIMES_H_ */

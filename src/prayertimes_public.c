@@ -1,6 +1,6 @@
 /* libprayertimes public API. */
 #include "prayertimes.h"
-#include "prayertimes_private.h"
+#include "prayertimesC.h"
 
 /* Calculate prayer times into `times` given configuration `conf` and
  * time `time`. */
@@ -79,4 +79,10 @@ void prayertimes_adjust(prayertimes_conf_t conf, time_t time,
                  out_times, c);
 
     return;
+}
+
+/* Return version of libprayertimes */
+const char *prayertimes_version(void)
+{
+    return PRAYERTIMES_LIB_VER;
 }

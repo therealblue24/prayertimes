@@ -9,6 +9,8 @@ typedef struct {
     int hour, minute, second, millisecond;
 } timelabel;
 
+#define PRAYERTIMES_LIB_VER "1.0.1"
+
 /* give current suntime given timestamp */
 double suntime_now(time_t now);
 /* equation of time */

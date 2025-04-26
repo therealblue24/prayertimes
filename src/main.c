@@ -9,12 +9,12 @@
 #include <sys/stat.h>
 #include <ctype.h>
 #include <assert.h>
-#include "prayertimes_private.h"
+#include "prayertimesC.h"
 #include "config.h"
 
 #define strlit(x) strndup(x, strlen(x) + 1)
 
-#define VERSION "2.0.3"
+#define VERSION "2.0.4"
 
 #define _str(x)       x
 #define xstr(x)       _str(#x)
@@ -187,7 +187,8 @@ static void copyright(void)
 
 static void show_version(void)
 {
-    printf("version " VERSION ", " __DATE__ "\n");
+    printf("app version " VERSION ", " __DATE__ "\n");
+    printf("lib version " PRAYERTIMES_LIB_VER "\n");
     return;
 }
 
