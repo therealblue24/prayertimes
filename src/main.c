@@ -181,7 +181,7 @@ end:;
 static void copyright(void)
 {
     printf(
-        "therealblue24's prayer time calculator\nCopyright (C) 2025 therealblue24 (under the MIT license).\n");
+        "therealblue24's prayer time calculator\nCopyright (C) 2024-2025 therealblue24 (under the MIT license).\n");
     return;
 }
 
