@@ -15,6 +15,10 @@ LIBNAM = libprayertimes.a
 CFLAGS = -std=c99 -Wall -Wextra -Isrc -Iinclude -g 
 LDFLAGS = -lm
 
+RELEASE ?= no
+CODE_REVIEW ?= no
+SANITIZERS ?= no
+
 ifeq ($(RELEASE), yes)
 	CFLAGS += -O2
 endif

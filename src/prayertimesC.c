@@ -353,7 +353,7 @@ static APIFN num midday(num jd, num lng, num Z)
 APIFN void calc_schedule(num lat, num lng, num elev, num Z, time_t time,
                          num *times, times_conf conf)
 {
-    num jd = jdn_now_with_timezone(time, 3600 * Z);
+    num jd = jdn_now_with_timezone(time, (time_t)(3600 * Z));
     num decl = dec(jd); // declination of the sun
     num evfactor = 0.0347 * sqrt(elev); // elevation factor
     num dhuhr = midday(jd, lng, Z); // dhuhr time
@@ -406,7 +406,7 @@ APIFN void adjust_times(num lat, num lng, num elev, num Z, time_t time,
         times[i] = bound_hour(times[i]) / 24;
     }
 
-    num jd = jdn_now_with_timezone(time, 3600 * Z);
+    num jd = jdn_now_with_timezone(time, (time_t)(3600 * Z));
     num evfactor = 0.0347 * sqrt(elev); // elevation factor
     num dhuhr = midday(jd + times[DHUHR], lng, Z);
 
