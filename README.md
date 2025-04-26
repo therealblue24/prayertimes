@@ -87,6 +87,7 @@ Usage:
 	-ma, --maghrib-angle		set maghrib angle
 	-im, --imsak-minutes		set imsak minutes
 	-i,  --isha-minutes		set isha minutes
+	-d, --default			set all settings to default
 	--ramadan			pass this flag if it's Ramadan
 	--adjust			adjust prayer times
 	-mwl, --mwl-method		use MWL method
@@ -96,4 +97,5 @@ Usage:
 	-karachi, --karachi-method	use Karachi method
 	-tehran, --tehran-method	use Tehran method
 	-jafari, --jafari-method	use Jafari method
+	--rewrite			rewrite config
 ```
