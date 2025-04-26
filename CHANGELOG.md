@@ -1,5 +1,5 @@
 # libprayertimes `1.0.2`
-Made symbols hidden
+Made internal symbols hidden
 
 # libprayertimes `1.0.1`
 Made a function to return version of library
