@@ -42,7 +42,7 @@ ifeq ($(SANTIZERS), yes)
 endif
 
 SRC = $(wildcard src/*.c)
-LIBSRC = $(filter-out src/main.c, $(SRC))
+LIBSRC = $(filter-out src/config.c, $(filter-out src/main.c, $(SRC)))
 OBJ = $(SRC:.c=.o)
 LIBOBJ = $(LIBSRC:.c=.o)
 

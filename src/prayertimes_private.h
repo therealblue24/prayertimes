@@ -1,5 +1,5 @@
-#ifndef PRAYER_TIMES_H_
-#define PRAYER_TIMES_H_
+#ifndef PRAYER_TIMES_PRIVATE_H_
+#define PRAYER_TIMES_PRIVATE_H_
 
 #include <math.h>
 #include <stdbool.h>
@@ -23,6 +23,10 @@ double angle_A(double n, double lng, double lat, double dec);
 double bound_angle(double ang);
 /* fix suntime */
 double bound_hour(double hr);
+/* get JDN */
+double jdn_now(time_t t);
+/* get JDN but special */
+double jdn_now_with_timezone(time_t t, time_t off);
 
 typedef struct {
     double asr_shadow_length; /* shadow length of Asr */
@@ -66,4 +70,4 @@ void print_time(const char *l, timelabel t, print_conf_t conf, int time);
 /* suntime -> timelabel */
 timelabel sun2norm(double suntime);
 
-#endif /* #ifndef PRAYER_TIMES_H_ */
+#endif /* #ifndef PRAYER_TIMES_PRIVATE_H_ */

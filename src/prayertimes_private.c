@@ -1,7 +1,7 @@
 #ifdef __linux__
 #define _GNU_SOURCE
 #endif /* __linux__ */
-#include "prayertimes.h"
+#include "prayertimes_private.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,11 +38,25 @@ num bound_hour(num hr)
     return fmod(hr + 24, 24);
 }
 
-/* julian day number from unix timestamp */
-static num jdn_now(time_t now)
+num jdn_now_with_timezone(time_t now, time_t off)
 {
     time_t n = now;
+    /* main thing */
 
+    /* Thanks to Wikipedia (https://en.wikipedia.org/wiki/Julian_day#Variants)
+     * for this clever trick! */
+    n += off; /* adjust to native timezone */
+    n -= (n % 86400); /* beginning of day */
+    num jd = (num)n;
+    jd = ((double)n / 86400.) + 2440587.5; /* timestamp -> JDN */
+    return jd;
+}
+
+/* julian day number from unix timestamp */
+/* unused.. for now.. */
+num jdn_now(time_t now)
+{
+    time_t n = now;
     /* timezone detection */
 
     struct tm tm = *localtime(&n);
@@ -51,16 +65,7 @@ static num jdn_now(time_t now)
     /* Thanks https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c! */
     utc_tm.tm_isdst = -1;
     long off = mktime(&tm) - mktime(&utc_tm);
-
-    /* main thing */
-
-    /* Thanks to Wikipedia (https://en.wikipedia.org/wiki/Julian_day#Variants)
-     * for this clever trick! */
-    n += off; /* adjust to UTC */
-    n -= (n % 86400); /* beginning of day */
-    num jd = (num)n;
-    jd = ((double)n / 86400.) + 2440587.5; /* timestamp -> JDN */
-    return jd;
+    return jdn_now_with_timezone(now, off);
 }
 
 /* suntime from unix timestamp */
@@ -348,7 +353,7 @@ static num midday(num jd, num lng, num Z)
 void calc_schedule(num lat, num lng, num elev, num Z, time_t time, num *times,
                    times_conf conf)
 {
-    num jd = jdn_now(time);
+    num jd = jdn_now_with_timezone(time, 3600 * Z);
     num decl = dec(jd); // declination of the sun
     num evfactor = 0.0347 * sqrt(elev); // elevation factor
     num dhuhr = midday(jd, lng, Z); // dhuhr time
@@ -401,7 +406,7 @@ void adjust_times(num lat, num lng, num elev, num Z, time_t time, num *times,
         times[i] = bound_hour(times[i]) / 24;
     }
 
-    num jd = jdn_now(time);
+    num jd = jdn_now_with_timezone(time, 3600 * Z);
     num evfactor = 0.0347 * sqrt(elev); // elevation factor
     num dhuhr = midday(jd + times[DHUHR], lng, Z);
 

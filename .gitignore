@@ -12,3 +12,4 @@ hijricalendar
 .cache
 compile_commands.json
 oldmakefile
+test

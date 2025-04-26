@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 #include <ctype.h>
 #include <assert.h>
-#include "prayertimes.h"
+#include "prayertimes_private.h"
 #include "config.h"
 
 #define strlit(x) strndup(x, strlen(x) + 1)
