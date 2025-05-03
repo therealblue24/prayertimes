@@ -1,3 +1,8 @@
+# prayertimes `2.0.5`
+Added `make fmt` to Makefile to format code
+
+Used a better `.clang-format`
+
 # libprayertimes `1.0.2`
 Made internal symbols hidden
 

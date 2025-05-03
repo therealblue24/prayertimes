@@ -2,8 +2,8 @@ thing*
 bkp
 *.o
 bin
-.clang-format
 *.bkp
+*bkp
 insert_funny_joke_here
 tst.*
 testing

@@ -7,15 +7,15 @@
 void prayertimes_calc(prayertimes_conf_t conf, time_t time, double times[7])
 {
     times_conf c;
-    c = (times_conf){ .asr_shadow_length = conf.asr_shadow_length,
-                      .fajr_angle = conf.fajr_angle,
-                      .maghrib_angle = conf.maghrib_angle,
-                      .isha_angle = conf.isha_angle,
-                      .maghrib_minutes = conf.maghrib_minutes,
-                      .isha_minutes = conf.isha_minutes,
-                      .use_isha_angle = !conf.isha_use_maghrib,
-                      .use_maghrib_angle = !conf.maghrib_use_sunset,
-                      .adjust_method = 0 /* unused */ };
+    c = (times_conf){.asr_shadow_length = conf.asr_shadow_length,
+                     .fajr_angle = conf.fajr_angle,
+                     .maghrib_angle = conf.maghrib_angle,
+                     .isha_angle = conf.isha_angle,
+                     .maghrib_minutes = conf.maghrib_minutes,
+                     .isha_minutes = conf.isha_minutes,
+                     .use_isha_angle = !conf.isha_use_maghrib,
+                     .use_maghrib_angle = !conf.maghrib_use_sunset,
+                     .adjust_method = 0 /* unused */};
     if(!times) {
         return;
     }
@@ -27,7 +27,9 @@ void prayertimes_calc(prayertimes_conf_t conf, time_t time, double times[7])
         time_t do_not_modify = time;
         struct tm tm = *localtime(&do_not_modify);
         struct tm utc_tm = *gmtime(&do_not_modify);
-        /* Thanks https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c! */
+        /* Thanks
+         * https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c!
+         */
         utc_tm.tm_isdst = -1;
         long off = mktime(&tm) - mktime(&utc_tm);
         tz = (double)off / 3600.0;
@@ -45,15 +47,15 @@ void prayertimes_adjust(prayertimes_conf_t conf, time_t time,
                         double in_times[7], double out_times[7])
 {
     times_conf c;
-    c = (times_conf){ .asr_shadow_length = conf.asr_shadow_length,
-                      .fajr_angle = conf.fajr_angle,
-                      .maghrib_angle = conf.maghrib_angle,
-                      .isha_angle = conf.isha_angle,
-                      .maghrib_minutes = conf.maghrib_minutes,
-                      .isha_minutes = conf.isha_minutes,
-                      .use_isha_angle = !conf.isha_use_maghrib,
-                      .use_maghrib_angle = !conf.maghrib_use_sunset,
-                      .adjust_method = 0 /* unused */ };
+    c = (times_conf){.asr_shadow_length = conf.asr_shadow_length,
+                     .fajr_angle = conf.fajr_angle,
+                     .maghrib_angle = conf.maghrib_angle,
+                     .isha_angle = conf.isha_angle,
+                     .maghrib_minutes = conf.maghrib_minutes,
+                     .isha_minutes = conf.isha_minutes,
+                     .use_isha_angle = !conf.isha_use_maghrib,
+                     .use_maghrib_angle = !conf.maghrib_use_sunset,
+                     .adjust_method = 0 /* unused */};
     if(!in_times || !out_times) {
         return;
     }
@@ -65,7 +67,9 @@ void prayertimes_adjust(prayertimes_conf_t conf, time_t time,
         time_t do_not_modify = time;
         struct tm tm = *localtime(&do_not_modify);
         struct tm utc_tm = *gmtime(&do_not_modify);
-        /* Thanks https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c! */
+        /* Thanks
+         * https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c!
+         */
         utc_tm.tm_isdst = -1;
         long off = mktime(&tm) - mktime(&utc_tm);
         tz = (double)off / 3600.0;

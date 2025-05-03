@@ -50,13 +50,21 @@ LIBSRC = $(filter-out src/config.c, $(filter-out src/main.c, $(SRC)))
 OBJ = $(SRC:.c=.o)
 LIBOBJ = $(LIBSRC:.c=.o)
 
-.PHONY: dirs build test link
+FMTFILES = $(wildcard include/*.h) $(wildcard src/*.c) $(wildcard src/*.h)
+
+.PHONY: dirs build test link fmt
 
 all: dirs build link
 
 dirs:
 	@# Create bin dir
 	@mkdir -p $(BINDIR)
+
+fmt:
+	make -C tools
+	clang-format -style="file:.clang-format" -i -- $(FMTFILES)
+	@echo "going to detab, used for git"
+	./tools/detab v $(FMTFILES)
 
 %.o: %.c
 	@echo "compiling $<"

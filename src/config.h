@@ -1,12 +1,12 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
+#include <assert.h>
+#include <errno.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <stdbool.h>
-#include <assert.h>
 
 #define STRING 0
 #define NUM    1

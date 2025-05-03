@@ -1,20 +1,20 @@
-#include <stdio.h>
+#include "config.h"
+#include "prayertimesC.h"
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
 #include <math.h>
-#include <unistd.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <time.h>
-#include <errno.h>
 #include <sys/stat.h>
-#include <ctype.h>
-#include <assert.h>
-#include "prayertimesC.h"
-#include "config.h"
+#include <time.h>
+#include <unistd.h>
 
 #define strlit(x) strndup(x, strlen(x) + 1)
 
-#define VERSION "2.0.4"
+#define VERSION "2.0.5"
 
 #define _str(x)       x
 #define xstr(x)       _str(#x)
@@ -77,15 +77,13 @@ static const char *prefixes[] = {
     [16] = "th", [17] = "th", [18] = "th", [19] = "th", [20] = "th",
     [21] = "st", [22] = "nd", [23] = "rd", [24] = "th", [25] = "th",
     [26] = "th", [27] = "th", [28] = "th", [29] = "th", [30] = "th",
-    [31] = "st", NULL
-};
+    [31] = "st", NULL};
 
-static const char *months[] = { "January",   "Feburary", "March",    "April",
-                                "May",       "June",     "July",     "August",
-                                "September", "October",  "November", "December",
-                                NULL };
-static const char *weekdays[] = { "Sunday",   "Monday", "Tuesday",  "Wednesday",
-                                  "Thursday", "Friday", "Saturday", NULL };
+static const char *months[] = {
+    "January", "Feburary",  "March",   "April",    "May",      "June", "July",
+    "August",  "September", "October", "November", "December", NULL};
+static const char *weekdays[] = {"Sunday",   "Monday", "Tuesday",  "Wednesday",
+                                 "Thursday", "Friday", "Saturday", NULL};
 
 /* safe remove basically */
 static void remove_chk(char *path)
@@ -119,7 +117,7 @@ static void zfgets(char *buf, int size, FILE *f)
 
 static void init_conf(config_t *cfg)
 {
-    char b[512] = { 0 };
+    char b[512] = {0};
     double lat = 0, lng = 0, elev = 0, ang = 0;
     printf("Prayer time configurer\n");
     printf("Latitude: ");
@@ -144,7 +142,7 @@ static void init_conf(config_t *cfg)
         ang = 2. / 7.;
     } else if(strcmp(b, "sunni") == 0) {
         long res;
-label0:;
+    label0:;
         printf("Shafi'i (1) or Hanafi (2)?\n");
         zfgets(b, sizeof(b), stdin);
 
@@ -159,11 +157,11 @@ label0:;
         exit(EXIT_FAILURE);
     }
 
-#define N(x, y)                                               \
-    config_append_val(cfg, (config_val_t){ .name = x,         \
-                                           .value_type = NUM, \
-                                           .val.num = y,      \
-                                           .notexist = false })
+#define N(x, y)                                              \
+    config_append_val(cfg, (config_val_t){.name = x,         \
+                                          .value_type = NUM, \
+                                          .val.num = y,      \
+                                          .notexist = false})
     goto end;
 end:;
     printf("Ok, preparing config file... \n");
@@ -180,8 +178,8 @@ end:;
 
 static void copyright(void)
 {
-    printf(
-        "therealblue24's prayer time calculator\nCopyright (C) 2024-2025 therealblue24 (under the MIT license).\n");
+    printf("therealblue24's prayer time calculator\nCopyright (C) 2024-2025 "
+           "therealblue24 (under the MIT license).\n");
     return;
 }
 
@@ -209,8 +207,8 @@ static void show_help(bool version)
     printf("\t-u, --utc\t\t\tprint times in UTC\n");
     printf("\t-h, --help\t\t\tthis page\n");
     printf("\t--version\t\t\tprint version of prayertimes\n");
-    printf(
-        "\t-c, --color\t\t\tcolorize prayer times (requires truecolor support)\n");
+    printf("\t-c, --color\t\t\tcolorize prayer times (requires truecolor "
+           "support)\n");
     printf("\t--no-fajr\t\t\tdon't print fajr\n");
     printf("\t--no-sunrise\t\t\tdon't print sunrise\n");
     printf("\t--no-dhuhr\t\t\tdon't print dhuhr\n");
@@ -247,8 +245,8 @@ static void reinterperet_config_values(config_t *cfg)
 #define X(v, t) config_reinterperet_val(cfg, v, t)
 #define B(v)    X(xstr(v), BOOL)
 #define N(v)    X(xstr(v), NUM)
-    //#define I(v)    X(xstr(v), INT)
-    //#define S(v)    X(xstr(v), STRING)
+    // #define I(v)    X(xstr(v), INT)
+    // #define S(v)    X(xstr(v), STRING)
 
     B(silent_mode);
     B(show_future_only);
@@ -298,8 +296,8 @@ static void load_config_values(config_t *cfg, print_conf_t *pc, struct conf *c)
 {
 #define B(s, n, v) s = config_getbool(cfg, n, v)
 #define N(s, n, v) s = config_getnum(cfg, n, v)
-//#define I(s, n, v) s = config_getint(cfg, n, v)
-//#define S(s, n, v) s = config_getstr(cfg, n, v)
+// #define I(s, n, v) s = config_getint(cfg, n, v)
+// #define S(s, n, v) s = config_getstr(cfg, n, v)
 #define tc c->timeconf
     char *method;
 
@@ -368,14 +366,14 @@ static const struct conf default_conf = {
     .midnight = false,
     .imsak = false,
     .imsak_minutes = 15.0,
-    .timeconf = { .asr_shadow_length = 0,
+    .timeconf = {.asr_shadow_length = 0,
                  .fajr_angle = 13.5,
                  .isha_angle = 14.5,
                  .maghrib_minutes = 15,
                  .isha_minutes = 0,
                  .maghrib_angle = 0,
                  .use_maghrib_angle = false,
-                 .use_isha_angle = true },
+                 .use_isha_angle = true},
     .shia = false,
     .sunni = false,
     .adjust = false,
@@ -385,14 +383,14 @@ static const struct conf default_conf = {
 
 int main(int argc, char *argv[])
 {
-    static const char *methods[] = { "none",   "mwl",     "isna",   "egypt",
-                                     "makkah", "karachi", "tehran", "jafari" };
+    static const char *methods[] = {"none",   "mwl",     "isna",   "egypt",
+                                    "makkah", "karachi", "tehran", "jafari"};
     bool midnight_using_fajr = false;
     bool emit_file = 0;
     config_t *cfg;
     int ramadan = 0;
 
-    print_conf_t pconf = { .am_pm = true, .seconds = false, .color = false };
+    print_conf_t pconf = {.am_pm = true, .seconds = false, .color = false};
     struct conf conf = default_conf;
     bool set_to_default = false;
 
@@ -508,11 +506,11 @@ int main(int argc, char *argv[])
         assert(fread(&elev, sizeof(double), 1, f));
         fclose(f);
 
-#define N(x, y)                                               \
-    config_append_val(cfg, (config_val_t){ .name = x,         \
-                                           .value_type = NUM, \
-                                           .val.num = y,      \
-                                           .notexist = false })
+#define N(x, y)                                              \
+    config_append_val(cfg, (config_val_t){.name = x,         \
+                                          .value_type = NUM, \
+                                          .val.num = y,      \
+                                          .notexist = false})
 
         N("latitude", lat);
         N("longitude", lng);
@@ -542,8 +540,8 @@ int main(int argc, char *argv[])
 
     /* If user requests setting everything to default */
     if(set_to_default && !new_config_not_found) {
-        /* We want to keep latitude, longitude, asr shadow length & elevation though, so we cherry pick
-         * those values from the main config */
+        /* We want to keep latitude, longitude, asr shadow length & elevation
+         * though, so we cherry pick those values from the main config */
 
         /* load config */
         config_t *tmp = config_init();
@@ -666,7 +664,8 @@ int main(int argc, char *argv[])
 #define tc conf.timeconf
 #define c  conf
 
-        /* Methods refrenced from this page: http://praytimes.org/wiki/Calculation_Methods */
+        /* Methods refrenced from this page:
+         * http://praytimes.org/wiki/Calculation_Methods */
 
         methodchk(mwl, 1)
         {
@@ -853,7 +852,9 @@ int main(int argc, char *argv[])
 #else
     /* Linux doesn't have tm.tm_gmtoff and tm.tm_zone. Why??????? */
     struct tm utc_tm = *gmtime(&now);
-    /* Thanks https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c! */
+    /* Thanks
+     * https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c!
+     */
     utc_tm.tm_isdst = -1;
     off = mktime(&tm) - mktime(&utc_tm);
 #endif /* __APPLE__ */
@@ -874,7 +875,7 @@ int main(int argc, char *argv[])
                months[tm.tm_mon], tm.tm_mday, prefixes[tm.tm_mday],
                tm.tm_year + 1900);
     }
-    double t[7] = { 0 };
+    double t[7] = {0};
 
     calc_schedule(conf.lat, conf.lng, conf.elevation, Z, now, t, conf.timeconf);
     if(conf.adjust) {

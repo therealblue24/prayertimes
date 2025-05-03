@@ -2,10 +2,10 @@
 #define _GNU_SOURCE
 #endif /* __linux__ */
 #include "prayertimesC.h"
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
 
 /* math.h doesn't have M_PI on Linux. Why??? */
 
@@ -62,7 +62,9 @@ APIFN num jdn_now(time_t now)
     struct tm tm = *localtime(&n);
     /* Linux doesn't have tm.tm_gmtoff and tm.tm_zone. Why??????? */
     struct tm utc_tm = *gmtime(&now);
-    /* Thanks https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c! */
+    /* Thanks
+     * https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c!
+     */
     utc_tm.tm_isdst = -1;
     long off = mktime(&tm) - mktime(&utc_tm);
     return jdn_now_with_timezone(now, off);
@@ -127,7 +129,7 @@ APIFN num dec(num jd)
 /* turn a suntime into a normal time */
 APIFN timelabel sun2norm(num suntime)
 {
-    timelabel ret = { 0 };
+    timelabel ret = {0};
     num work = suntime, tmp = 0;
     work = fmod(work + 24, 24);
     tmp = floor(work);
@@ -176,7 +178,7 @@ APIFN num angle_A(num n, num lat, num lng, num dec)
     /* And also inspired from C++ impl in http://praytimes.org/wiki/Code */
     /* And also thanks to Wikipedia for making me realize I did
      * longitude - declination
-     * rather than latitude - declination. 
+     * rather than latitude - declination.
      * :facepalm:.                         */
     num abs_angle = fabs(lat - dec);
     num tangent = (dtan(abs_angle));
@@ -192,7 +194,7 @@ static APIFN void print_time_12h_no_sec(const char *l, timelabel t, char **b)
     }
     if(t.hour == 0)
         t.hour = 12;
-    const char *am_or_pm[] = { "AM", "PM" };
+    const char *am_or_pm[] = {"AM", "PM"};
     asprintf(b, "%s %2" PRId32 ":%02" PRId32 " %s\n", l, t.hour, t.minute,
              am_or_pm[pm]);
     return;
@@ -206,7 +208,7 @@ static APIFN void print_time_12h_sec(const char *l, timelabel t, char **b)
     }
     if(t.hour == 0)
         t.hour = 12;
-    const char *am_or_pm[] = { "AM", "PM" };
+    const char *am_or_pm[] = {"AM", "PM"};
     asprintf(b, "%s %2" PRId32 ":%02" PRId32 ":%02" PRId32 " %s\n", l, t.hour,
              t.minute, t.second, am_or_pm[pm]);
     return;
@@ -238,21 +240,21 @@ typedef struct colorp {
 static const colorp timecolor[8] = {
     /* All prefixed with FINDME: so that I can search for them easily. */
     /* FINDME:fajr    */
-    { { 227, 223, 211 }, { 243, 245, 149 } },
+    {{227, 223, 211}, {243, 245, 149}},
     /* FINDME:sunrise */
-    { { 255, 68, 41 },   { 252, 222, 114 } },
+    {{255, 68, 41},   {252, 222, 114}},
     /* FINDME:dhuhr   */
-    { { 7, 118, 245 },   { 7, 245, 118 }   },
+    {{7, 118, 245},   {7, 245, 118}  },
     /* FINDME:asr     */
-    { { 7, 245, 118 },   { 190, 129, 240 } },
+    {{7, 245, 118},   {190, 129, 240}},
     /* FINDME:sunset  */
-    { { 252, 222, 114 }, { 255, 68, 41 }   },
+    {{252, 222, 114}, {255, 68, 41}  },
     /* FINDME:maghrib */
-    { { 98, 33, 252 },   { 245, 98, 7 }    },
+    {{98, 33, 252},   {245, 98, 7}   },
     /* FINDME:isha    */
-    { { 245, 98, 7 },    { 75, 68, 92 }    },
+    {{245, 98, 7},    {75, 68, 92}   },
     /* FINDME:midnight*/
-    { { 255, 255, 255 }, { 128, 128, 128 } },
+    {{255, 255, 255}, {128, 128, 128}},
 };
 
 /* mix 2 colors */
@@ -278,7 +280,7 @@ static APIFN color mix(colorp s, int i, int l)
         g = 0;
     if(b < 0)
         b = 0;
-    return (color){ (uint8_t)r, (uint8_t)g, (uint8_t)b };
+    return (color){(uint8_t)r, (uint8_t)g, (uint8_t)b};
 }
 
 static APIFN void setcol(color c)
@@ -331,7 +333,7 @@ APIFN void print_time(const char *l, timelabel t, print_conf_t pconf, int time)
 }
 
 /* lat = latitude, lng = longitude, elev = elevation, Z = time zone,
-   time = unix timestamp, times = pointer to array to store times, 
+   time = unix timestamp, times = pointer to array to store times,
    conf = configuration */
 
 /* Default conf is:
@@ -369,7 +371,8 @@ APIFN void calc_schedule(num lat, num lng, num elev, num Z, time_t time,
     num sunrise = dhuhr - angle_T((5. / 6.) + evfactor, lng, lat, decl);
     // Sunset is dhuhr added on an angle of 5/6 degrees
     num sunset = dhuhr + angle_T((5. / 6.) + evfactor, lng, lat, decl);
-    // Maghrib is either some minutes after sunset or some minutes after an angle
+    // Maghrib is either some minutes after sunset or some minutes after an
+    // angle
     num maghrib = sunset + (conf.maghrib_minutes / 60);
     if(conf.use_maghrib_angle) {
         maghrib = dhuhr +
