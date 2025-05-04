@@ -1,5 +1,3 @@
----
-Language:        Cpp
 AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
 AlignArrayOfStructures: Left
@@ -813,7 +811,6 @@ SpacesInParensOptions:
   InEmptyParentheses: false
   Other:           false
 SpacesInSquareBrackets: false
-Standard:        c++03
 StatementAttributeLikeMacros:
   - Q_EMIT
 StatementMacros:
@@ -830,5 +827,3 @@ WhitespaceSensitiveMacros:
   - PP_STRINGIZE
   - STRINGIZE
 WrapNamespaceBodyWithEmptyLines: Leave
-...
-
