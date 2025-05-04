@@ -77,13 +77,15 @@ static const char *prefixes[] = {
     [16] = "th", [17] = "th", [18] = "th", [19] = "th", [20] = "th",
     [21] = "st", [22] = "nd", [23] = "rd", [24] = "th", [25] = "th",
     [26] = "th", [27] = "th", [28] = "th", [29] = "th", [30] = "th",
-    [31] = "st", NULL};
+    [31] = "st", NULL
+};
 
-static const char *months[] = {
-    "January", "Feburary",  "March",   "April",    "May",      "June", "July",
-    "August",  "September", "October", "November", "December", NULL};
-static const char *weekdays[] = {"Sunday",   "Monday", "Tuesday",  "Wednesday",
-                                 "Thursday", "Friday", "Saturday", NULL};
+static const char *months[] = { "January",   "Feburary", "March",    "April",
+                                "May",       "June",     "July",     "August",
+                                "September", "October",  "November", "December",
+                                NULL };
+static const char *weekdays[] = { "Sunday",   "Monday", "Tuesday",  "Wednesday",
+                                  "Thursday", "Friday", "Saturday", NULL };
 
 /* safe remove basically */
 static void remove_chk(char *path)
@@ -117,7 +119,7 @@ static void zfgets(char *buf, int size, FILE *f)
 
 static void init_conf(config_t *cfg)
 {
-    char b[512] = {0};
+    char b[512] = { 0 };
     double lat = 0, lng = 0, elev = 0, ang = 0;
     printf("Prayer time configurer\n");
     printf("Latitude: ");
@@ -142,7 +144,7 @@ static void init_conf(config_t *cfg)
         ang = 2. / 7.;
     } else if(strcmp(b, "sunni") == 0) {
         long res;
-    label0:;
+label0:;
         printf("Shafi'i (1) or Hanafi (2)?\n");
         zfgets(b, sizeof(b), stdin);
 
@@ -157,11 +159,11 @@ static void init_conf(config_t *cfg)
         exit(EXIT_FAILURE);
     }
 
-#define N(x, y)                                              \
-    config_append_val(cfg, (config_val_t){.name = x,         \
-                                          .value_type = NUM, \
-                                          .val.num = y,      \
-                                          .notexist = false})
+#define N(x, y)                                               \
+    config_append_val(cfg, (config_val_t){ .name = x,         \
+                                           .value_type = NUM, \
+                                           .val.num = y,      \
+                                           .notexist = false })
     goto end;
 end:;
     printf("Ok, preparing config file... \n");
@@ -366,14 +368,14 @@ static const struct conf default_conf = {
     .midnight = false,
     .imsak = false,
     .imsak_minutes = 15.0,
-    .timeconf = {.asr_shadow_length = 0,
+    .timeconf = { .asr_shadow_length = 0,
                  .fajr_angle = 13.5,
                  .isha_angle = 14.5,
                  .maghrib_minutes = 15,
                  .isha_minutes = 0,
                  .maghrib_angle = 0,
                  .use_maghrib_angle = false,
-                 .use_isha_angle = true},
+                 .use_isha_angle = true },
     .shia = false,
     .sunni = false,
     .adjust = false,
@@ -383,14 +385,14 @@ static const struct conf default_conf = {
 
 int main(int argc, char *argv[])
 {
-    static const char *methods[] = {"none",   "mwl",     "isna",   "egypt",
-                                    "makkah", "karachi", "tehran", "jafari"};
+    static const char *methods[] = { "none",   "mwl",     "isna",   "egypt",
+                                     "makkah", "karachi", "tehran", "jafari" };
     bool midnight_using_fajr = false;
     bool emit_file = 0;
     config_t *cfg;
     int ramadan = 0;
 
-    print_conf_t pconf = {.am_pm = true, .seconds = false, .color = false};
+    print_conf_t pconf = { .am_pm = true, .seconds = false, .color = false };
     struct conf conf = default_conf;
     bool set_to_default = false;
 
@@ -506,11 +508,11 @@ int main(int argc, char *argv[])
         assert(fread(&elev, sizeof(double), 1, f));
         fclose(f);
 
-#define N(x, y)                                              \
-    config_append_val(cfg, (config_val_t){.name = x,         \
-                                          .value_type = NUM, \
-                                          .val.num = y,      \
-                                          .notexist = false})
+#define N(x, y)                                               \
+    config_append_val(cfg, (config_val_t){ .name = x,         \
+                                           .value_type = NUM, \
+                                           .val.num = y,      \
+                                           .notexist = false })
 
         N("latitude", lat);
         N("longitude", lng);
@@ -875,7 +877,7 @@ int main(int argc, char *argv[])
                months[tm.tm_mon], tm.tm_mday, prefixes[tm.tm_mday],
                tm.tm_year + 1900);
     }
-    double t[7] = {0};
+    double t[7] = { 0 };
 
     calc_schedule(conf.lat, conf.lng, conf.elevation, Z, now, t, conf.timeconf);
     if(conf.adjust) {

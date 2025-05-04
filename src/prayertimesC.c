@@ -129,7 +129,7 @@ APIFN num dec(num jd)
 /* turn a suntime into a normal time */
 APIFN timelabel sun2norm(num suntime)
 {
-    timelabel ret = {0};
+    timelabel ret = { 0 };
     num work = suntime, tmp = 0;
     work = fmod(work + 24, 24);
     tmp = floor(work);
@@ -194,7 +194,7 @@ static APIFN void print_time_12h_no_sec(const char *l, timelabel t, char **b)
     }
     if(t.hour == 0)
         t.hour = 12;
-    const char *am_or_pm[] = {"AM", "PM"};
+    const char *am_or_pm[] = { "AM", "PM" };
     asprintf(b, "%s %2" PRId32 ":%02" PRId32 " %s\n", l, t.hour, t.minute,
              am_or_pm[pm]);
     return;
@@ -208,7 +208,7 @@ static APIFN void print_time_12h_sec(const char *l, timelabel t, char **b)
     }
     if(t.hour == 0)
         t.hour = 12;
-    const char *am_or_pm[] = {"AM", "PM"};
+    const char *am_or_pm[] = { "AM", "PM" };
     asprintf(b, "%s %2" PRId32 ":%02" PRId32 ":%02" PRId32 " %s\n", l, t.hour,
              t.minute, t.second, am_or_pm[pm]);
     return;
@@ -240,21 +240,21 @@ typedef struct colorp {
 static const colorp timecolor[8] = {
     /* All prefixed with FINDME: so that I can search for them easily. */
     /* FINDME:fajr    */
-    {{227, 223, 211}, {243, 245, 149}},
+    { { 227, 223, 211 }, { 243, 245, 149 } },
     /* FINDME:sunrise */
-    {{255, 68, 41},   {252, 222, 114}},
+    { { 255, 68, 41 },   { 252, 222, 114 } },
     /* FINDME:dhuhr   */
-    {{7, 118, 245},   {7, 245, 118}  },
+    { { 7, 118, 245 },   { 7, 245, 118 }   },
     /* FINDME:asr     */
-    {{7, 245, 118},   {190, 129, 240}},
+    { { 7, 245, 118 },   { 190, 129, 240 } },
     /* FINDME:sunset  */
-    {{252, 222, 114}, {255, 68, 41}  },
+    { { 252, 222, 114 }, { 255, 68, 41 }   },
     /* FINDME:maghrib */
-    {{98, 33, 252},   {245, 98, 7}   },
+    { { 98, 33, 252 },   { 245, 98, 7 }    },
     /* FINDME:isha    */
-    {{245, 98, 7},    {75, 68, 92}   },
+    { { 245, 98, 7 },    { 75, 68, 92 }    },
     /* FINDME:midnight*/
-    {{255, 255, 255}, {128, 128, 128}},
+    { { 255, 255, 255 }, { 128, 128, 128 } },
 };
 
 /* mix 2 colors */
@@ -280,7 +280,7 @@ static APIFN color mix(colorp s, int i, int l)
         g = 0;
     if(b < 0)
         b = 0;
-    return (color){(uint8_t)r, (uint8_t)g, (uint8_t)b};
+    return (color){ (uint8_t)r, (uint8_t)g, (uint8_t)b };
 }
 
 static APIFN void setcol(color c)

@@ -36,7 +36,7 @@ typedef struct {
     double asr_shadow_length; /* shadow length of Asr */
     double fajr_angle, isha_angle; /* angles of Fajr and Isha */
     double maghrib_minutes; /* how much minutes after
-                              [sunset/calculated maghrib] is maghrib */
+                             * [sunset/calculated maghrib] is maghrib */
     double isha_minutes; /* how much minutes after [calculated isha] is isha */
     double maghrib_angle; /* maghrib angle */
     bool use_maghrib_angle; /* use maghrib angle */

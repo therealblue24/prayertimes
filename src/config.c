@@ -34,10 +34,10 @@ optsize_t config_get_val_loc(config_t *cfg, char *name)
 {
     for(size_t i = 0; i < cfg->size; i++) {
         if(strcmp(cfg->vals[i].name, name) == 0 && !cfg->vals[i].notexist) {
-            return (optsize_t){.has_value = true, .val = i};
+            return (optsize_t){ .has_value = true, .val = i };
         }
     }
-    return (optsize_t){.has_value = false};
+    return (optsize_t){ .has_value = false };
 }
 
 /* Append a value to the config */
@@ -105,29 +105,29 @@ out:;
 
 int config_append_str(config_t *cfg, char *name, char *val)
 {
-    return config_append_val(
-        cfg,
-        (config_val_t){.name = name, .value_type = STRING, .val.str = val});
+    return config_append_val(cfg, (config_val_t){ .name = name,
+                                                  .value_type = STRING,
+                                                  .val.str = val });
 }
 
 int config_append_num(config_t *cfg, char *name, double val)
 {
     return config_append_val(
-        cfg, (config_val_t){.name = name, .value_type = NUM, .val.num = val});
+        cfg, (config_val_t){ .name = name, .value_type = NUM, .val.num = val });
 }
 
 int config_append_int(config_t *cfg, char *name, int val)
 {
-    return config_append_val(
-        cfg,
-        (config_val_t){.name = name, .value_type = INT, .val.integer = val});
+    return config_append_val(cfg, (config_val_t){ .name = name,
+                                                  .value_type = INT,
+                                                  .val.integer = val });
 }
 
 int config_append_bool(config_t *cfg, char *name, bool val)
 {
-    return config_append_val(
-        cfg,
-        (config_val_t){.name = name, .value_type = BOOL, .val.boolean = val});
+    return config_append_val(cfg, (config_val_t){ .name = name,
+                                                  .value_type = BOOL,
+                                                  .val.boolean = val });
 }
 
 /* Delete a value given name */
@@ -193,7 +193,7 @@ int config_reinterperet_val(config_t *cfg, char *name, int newtype)
 /* Emit a config in mem to a file */
 int config_emit(config_t *cfg, FILE *out)
 {
-    static const char *bool_to_string[] = {"false", "true", NULL};
+    static const char *bool_to_string[] = { "false", "true", NULL };
     for(size_t i = 0; i < cfg->size; i++) {
         config_val_t v = cfg->vals[i];
         fprintf(out, "%s: ", v.name);
@@ -220,7 +220,7 @@ int config_emit(config_t *cfg, FILE *out)
 /* debug */
 __attribute__((unused)) static void config_print_val(config_val_t v)
 {
-    static const char *bool_to_string[] = {"false", "true", NULL};
+    static const char *bool_to_string[] = { "false", "true", NULL };
     printf("%s: ", v.name);
     switch(v.value_type) {
     case STRING:
@@ -244,7 +244,8 @@ __attribute__((unused)) static void config_print_val(config_val_t v)
 config_val_t config_get_val(config_t *cfg, char *name)
 {
     const config_val_t null_value = (config_val_t){
-        .name = name, .notexist = true, .value_type = STRING, .val.str = NULL};
+        .name = name, .notexist = true, .value_type = STRING, .val.str = NULL
+    };
 
     optsize_t loc = config_get_val_loc(cfg, name);
     if(loc.has_value) {
@@ -285,9 +286,9 @@ int config_load(config_t *cfg, const char *filename)
     size = (size_t)ftell(f);
     rewind(f);
 
-    char name[100] = {0};
+    char name[100] = { 0 };
     size_t name_l = 0;
-    config_val_t v = {.value_type = STRING, .val.str = NULL};
+    config_val_t v = { .value_type = STRING, .val.str = NULL };
     size_t i = 0;
     bool did_something = false;
     while(i < size) {
