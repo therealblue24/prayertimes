@@ -6,6 +6,7 @@
 
 ## Low priority
 - [x] Make library version
+    - [ ] Make it good
 - [ ] Full customization
 - [ ] High latitude prayer time adjustment
 

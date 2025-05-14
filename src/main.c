@@ -12,6 +12,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#define PATHSIZE (PATH_MAX + 2)
+
 #define strlit(x) strndup(x, strlen(x) + 1)
 
 #define VERSION "2.0.5"
@@ -178,6 +180,45 @@ end:;
 #undef N
 }
 
+static void migrate_conf_v1_to_v2(char *rpath, config_t *cfg, struct conf *conf)
+{
+    double lat, lng, elev, ang = 0;
+    printf("Migrating config... ");
+    FILE *f = fopen(rpath, "rb");
+    if(!f) {
+        printf("error\n");
+        fprintf(stderr, "\nERROR: Failed to open configuration file: %s\n",
+                strerror(errno));
+        exit(EXIT_FAILURE);
+    }
+    assert(fread(&lng, sizeof(double), 1, f));
+    assert(fread(&lat, sizeof(double), 1, f));
+    assert(fread(&ang, sizeof(double), 1, f));
+    /* seperated so that it doesn't ruin alignment */
+    assert(fread(&elev, sizeof(double), 1, f));
+    fclose(f);
+
+#define N(x, y)                                               \
+    config_append_val(cfg, (config_val_t){ .name = x,         \
+                                           .value_type = NUM, \
+                                           .val.num = y,      \
+                                           .notexist = false })
+
+    N("latitude", lat);
+    N("longitude", lng);
+    N("elevation", elev);
+    N("asr_shadow_length", ang);
+
+    conf->timeconf.asr_shadow_length = ang;
+    conf->elevation = elev;
+    conf->lat = lat;
+    conf->lng = lng;
+
+    remove_chk(rpath);
+    printf("done\n");
+#undef N
+}
+
 static void copyright(void)
 {
     printf("therealblue24's prayer time calculator\nCopyright (C) 2024-2025 "
@@ -247,8 +288,10 @@ static void reinterperet_config_values(config_t *cfg)
 #define X(v, t) config_reinterperet_val(cfg, v, t)
 #define B(v)    X(xstr(v), BOOL)
 #define N(v)    X(xstr(v), NUM)
-    // #define I(v)    X(xstr(v), INT)
-    // #define S(v)    X(xstr(v), STRING)
+    //
+#define I(v) X(xstr(v), INT)
+    //
+#define S(v) X(xstr(v), STRING)
 
     B(silent_mode);
     B(show_future_only);
@@ -298,9 +341,11 @@ static void load_config_values(config_t *cfg, print_conf_t *pc, struct conf *c)
 {
 #define B(s, n, v) s = config_getbool(cfg, n, v)
 #define N(s, n, v) s = config_getnum(cfg, n, v)
-// #define I(s, n, v) s = config_getint(cfg, n, v)
-// #define S(s, n, v) s = config_getstr(cfg, n, v)
-#define tc c->timeconf
+    //
+#define I(s, n, v) s = config_getint(cfg, n, v)
+    //
+#define S(s, n, v) s = config_getstr(cfg, n, v)
+#define tc         c->timeconf
     char *method;
 
     B(c->silent_mode, "silent_mode", false);
@@ -350,7 +395,6 @@ static void load_config_values(config_t *cfg, print_conf_t *pc, struct conf *c)
     C(karachi, 5)
     C(tehran, 6)
     C(jafari, 7)
-
 #undef B
 #undef N
 #undef I
@@ -422,29 +466,27 @@ int main(int argc, char *argv[])
     if(conf.reconf) {
         emit_file = 1;
     }
-
     char *home = getenv("HOME");
     if(!home) {
         fprintf(stderr, "ERROR: failed to obtain $HOME: %s\n", strerror(errno));
         return 1;
     }
-
     bool configured = false;
 
-    char *dpath = calloc(1, 1024);
-    char *rpath = calloc(1, 1024);
-    char *cpath = calloc(1, 1024);
+    char *dpath = calloc(1, PATHSIZE);
+    char *rpath = calloc(1, PATHSIZE);
+    char *cpath = calloc(1, PATHSIZE);
     if(!dpath || !rpath || !cpath) {
         fprintf(stderr, "ERROR: Failed to allocate memory. ENOMEM?: %s\n",
                 strerror(errno));
         exit(EXIT_FAILURE);
     }
-    strlcpy(rpath, home, 1024);
-    strlcpy(dpath, home, 1024);
-    strlcpy(cpath, home, 1024);
-    strlcat(dpath, "/.config/prayertimes", 1024);
-    strlcat(rpath, "/.config/prayertimes/config.dat", 1024);
-    strlcat(cpath, "/.config/prayertimes/config.yml", 1024);
+    strlcpy(rpath, home, PATHSIZE);
+    strlcpy(dpath, home, PATHSIZE);
+    strlcpy(cpath, home, PATHSIZE);
+    strlcat(dpath, "/.config/prayertimes", PATHSIZE);
+    strlcat(rpath, "/.config/prayertimes/config.dat", PATHSIZE);
+    strlcat(cpath, "/.config/prayertimes/config.yml", PATHSIZE);
 
     if(access(dpath, F_OK) == -1) {
         if(errno == ENOENT) {
@@ -460,7 +502,6 @@ int main(int argc, char *argv[])
             return 1;
         }
     }
-
     bool old_config_not_found = access(rpath, F_OK) == -1;
 
     if(old_config_not_found && errno != ENOENT) {
@@ -468,7 +509,6 @@ int main(int argc, char *argv[])
                 strerror(errno));
         exit(EXIT_FAILURE);
     }
-
     bool new_config_not_found = access(cpath, F_OK) == -1;
 
     if(new_config_not_found && errno != ENOENT) {
@@ -476,62 +516,26 @@ int main(int argc, char *argv[])
                 strerror(errno));
         exit(EXIT_FAILURE);
     }
-
     if(!configured && conf.reconf) {
         init_conf(cfg);
         configured = true;
     }
-
     if(new_config_not_found && !configured && old_config_not_found) {
         printf("Configuring for first use\n");
         init_conf(cfg);
         configured = true;
         /* I have no idea why emit_file = true; sets it to false. */
         /* Instead, emit_file = 1; works... inshallah this never
-         * breaks. */
+        breaks. */
         emit_file = 1;
     }
 
+    /* If we find the old config. */
     if(!old_config_not_found) {
-        double lat, lng, elev, ang = 0;
-        printf("Migrating config... ");
-        FILE *f = fopen(rpath, "rb");
-        if(!f) {
-            fprintf(stderr, "\nERROR: Failed to open configuration file: %s\n",
-                    strerror(errno));
-            exit(EXIT_FAILURE);
-        }
-        assert(fread(&lng, sizeof(double), 1, f));
-        assert(fread(&lat, sizeof(double), 1, f));
-        assert(fread(&ang, sizeof(double), 1, f));
-        /* seperated so that it doesn't ruin alignment */
-        assert(fread(&elev, sizeof(double), 1, f));
-        fclose(f);
-
-#define N(x, y)                                               \
-    config_append_val(cfg, (config_val_t){ .name = x,         \
-                                           .value_type = NUM, \
-                                           .val.num = y,      \
-                                           .notexist = false })
-
-        N("latitude", lat);
-        N("longitude", lng);
-        N("elevation", elev);
-        N("asr_shadow_length", ang);
-
-        conf.timeconf.asr_shadow_length = ang;
-        conf.elevation = elev;
-        conf.lat = lat;
-        conf.lng = lng;
-
+        migrate_conf_v1_to_v2(rpath, cfg, &conf);
         emit_file = 1;
-
-        remove_chk(rpath);
         old_config_not_found = true;
-        printf("done\n");
-#undef N
     }
-
     time_t now = time(NULL);
     double now_suntime = suntime_now(now);
 
@@ -542,8 +546,9 @@ int main(int argc, char *argv[])
 
     /* If user requests setting everything to default */
     if(set_to_default && !new_config_not_found) {
-        /* We want to keep latitude, longitude, asr shadow length & elevation
-         * though, so we cherry pick those values from the main config */
+        /* We want to keep latitude, longitude, asr shadow length &
+        elevation though, so we cherry pick those values from the main
+        config */
 
         /* load config */
         config_t *tmp = config_init();
@@ -587,13 +592,9 @@ int main(int argc, char *argv[])
         v = set_to;                                    \
     }
 
-    /*
-#define flag_num(n, v)                            \
-    if(strcmp(arg, n) == 0) {                     \
-        double val = strtod(argv[++argc2], NULL); \
-        v = val;                                  \
-    }
-*/
+    /* #define flag_num(n, v)                            \ if(strcmp(arg,
+    n) == 0) {                     \ double val = strtod(argv[++argc2],
+    NULL); \ v = val;                                  \ } */
 
 #define flag_num2(n1, n2, v)                           \
     if(strcmp(arg, n1) == 0 || strcmp(arg, n2) == 0) { \
@@ -601,12 +602,8 @@ int main(int argc, char *argv[])
         v = val;                                       \
     }
 
-    /*
-#define flag_custom(n, c)     \
-    if(strcmp(arg, n) == 0) { \
-        c                     \
-    }
-*/
+    /* #define flag_custom(n, c)     \ if(strcmp(arg, n) == 0) { \ c
+    \ } */
 
 #define flag_custom2(n1, n2, c)                        \
     if(strcmp(arg, n1) == 0 || strcmp(arg, n2) == 0) { \
@@ -667,7 +664,7 @@ int main(int argc, char *argv[])
 #define c  conf
 
         /* Methods refrenced from this page:
-         * http://praytimes.org/wiki/Calculation_Methods */
+        http://praytimes.org/wiki/Calculation_Methods */
 
         methodchk(mwl, 1)
         {
@@ -761,7 +758,6 @@ int main(int argc, char *argv[])
         copyright();
         printf("to reconfigure, please run '%s --reconf'\n\n", argv[0]);
     }
-
 #define methodchk(x, y) if(y == conf.method)
 #define c               conf
 #define tc              conf.timeconf
@@ -855,8 +851,8 @@ int main(int argc, char *argv[])
     /* Linux doesn't have tm.tm_gmtoff and tm.tm_zone. Why??????? */
     struct tm utc_tm = *gmtime(&now);
     /* Thanks
-     * https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c!
-     */
+    https://stackoverflow.com/questions/13804095/get-the-time-zone-gmt-offset-in-c!
+    */
     utc_tm.tm_isdst = -1;
     off = mktime(&tm) - mktime(&utc_tm);
 #endif /* __APPLE__ */
@@ -871,7 +867,6 @@ int main(int argc, char *argv[])
     } else if(!conf.silent_mode) {
         printf("Time zone: %g hours (zone N/A)\n", Z);
     }
-
     if(!conf.silent_mode) {
         printf("Prayer times for %s, %s %d%s, %d:\n", weekdays[tm.tm_wday],
                months[tm.tm_mon], tm.tm_mday, prefixes[tm.tm_mday],
@@ -902,7 +897,6 @@ int main(int argc, char *argv[])
         double span = bound_hour(sunrise_suntime - sunset_suntime);
         midnight_suntime = sunset_suntime + (span / 2);
     }
-
     timelabel fajr = sun2norm(fajr_suntime);
     timelabel sunrise = sun2norm(sunrise_suntime);
     timelabel dhuhr = sun2norm(dhuhr_suntime);
