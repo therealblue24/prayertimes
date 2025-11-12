@@ -3,6 +3,8 @@ Prayer time calculation software, coded in C.
 
 Currently there is only a terminal CLI, library coming soon (TM)! 
 
+# I AM CURRENTLY REWRITING THIS !!!! EXPECT 3.0 SOON!!
+
 # Note
 This is mostly complete and usable software by now.
 
